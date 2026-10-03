@@ -3,7 +3,6 @@ import SiteSettings from "@/models/SiteSettings";
 import { getCurrentUser } from "@/lib/auth";
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 
-// Default stats (fallback)
 const DEFAULT_STATS = [
   { label: "Happy Customers", value: "10K+" },
   { label: "Premium Fabrics", value: "50+" },

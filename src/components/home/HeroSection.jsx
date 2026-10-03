@@ -1,17 +1,98 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, Truck, Shield, RotateCcw } from "lucide-react";
-import { HERO_DATA } from "@/config/homeData";
+import axios from "axios";
+import {
+  ArrowRight,
+  Sparkles,
+  Truck,
+  Shield,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+// Fallback data
+const DEFAULT_HERO = {
+  badge: "PREMIUM ISLAMIC FASHION",
+  headlines: [
+    { line1: "Sunnah in", line2: "Style" },
+    { line1: "Elegance in", line2: "Every Thread" },
+    { line1: "Tradition", line2: "Redefined" },
+  ],
+  autoRotate: true,
+  rotateInterval: 5000,
+  description: "Premium Thobes & Panjabis — crafted for the modern gentleman.",
+  primaryButton: { label: "Shop Collection", url: "/shop" },
+  secondaryButton: { label: "Customize Your Thobe", url: "/custom-thobe" },
+  image: "/images/home/hero-thobe.jpg",
+};
 
 export default function HeroSection() {
+  const [hero, setHero] = useState(DEFAULT_HERO);
+  const [currentHeadline, setCurrentHeadline] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchHero();
+  }, []);
+
+  const fetchHero = async () => {
+    try {
+      const { data } = await axios.get("/api/site-settings");
+      const heroContent = data.data.settings?.homepageContent?.hero;
+      if (heroContent) {
+        setHero({ ...DEFAULT_HERO, ...heroContent });
+      }
+    } catch (error) {
+      console.error("Hero fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-rotate headlines
+  useEffect(() => {
+    if (!hero.autoRotate || !hero.headlines || hero.headlines.length <= 1) {
+      return;
+    }
+
+    const activeHeadlines = hero.headlines.filter((h) => h.active !== false);
+
+    const interval = setInterval(() => {
+      setCurrentHeadline((prev) => (prev + 1) % activeHeadlines.length);
+    }, hero.rotateInterval || 5000);
+
+    return () => clearInterval(interval);
+  }, [hero]);
+
+  const activeHeadlines = (hero.headlines || []).filter(
+    (h) => h.active !== false
+  );
+
+  const current = activeHeadlines[currentHeadline] || activeHeadlines[0] || {
+    line1: "Sunnah in",
+    line2: "Style",
+  };
+
+  const goToNext = () => {
+    setCurrentHeadline((prev) => (prev + 1) % activeHeadlines.length);
+  };
+
+  const goToPrev = () => {
+    setCurrentHeadline(
+      (prev) => (prev - 1 + activeHeadlines.length) % activeHeadlines.length
+    );
+  };
+
   return (
     <section className="relative bg-background-luxury overflow-hidden">
-      {/* Decorative Background */}
+      {/* Decorative backgrounds */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-champagne/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
 
-      {/* Grid Pattern */}
+      {/* Grid pattern */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
@@ -21,12 +102,9 @@ export default function HeroSection() {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Mobile: Image First / Desktop: Two columns */}
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-20 items-center lg:min-h-[750px]">
-          
-          {/* ===== MOBILE IMAGE FIRST (order-1 on mobile, order-2 on desktop) ===== */}
-          <div className="relative order-1 lg:order-2 pt-6 lg:pt-16 animate-fade-in">
-            {/* Main Image Container */}
+          {/* ===== IMAGE (Mobile first) ===== */}
+          <div className="relative order-1 lg:order-2 pt-6 lg:pt-16">
             <div className="relative">
               {/* Rotating gold ring */}
               <div className="absolute inset-0 flex items-center justify-center">
@@ -36,22 +114,21 @@ export default function HeroSection() {
                 />
               </div>
 
-              {/* Main Image — Rounded Premium Card */}
+              {/* Image Card */}
               <div className="relative rounded-3xl overflow-hidden shadow-2xl group">
                 <img
-                  src={HERO_DATA.image}
+                  src={hero.image}
                   alt="Premium Thobe"
-                  className="w-full aspect-[4/5] lg:aspect-[4/5] object-cover group-hover:scale-105 transition-transform duration-1000"
+                  className="w-full aspect-[4/5] object-cover group-hover:scale-105 transition-transform duration-1000"
                 />
 
-                {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
                 {/* Gold corners */}
                 <div className="absolute top-4 left-4 w-10 h-10 lg:w-14 lg:h-14 border-t-2 border-l-2 border-gold rounded-tl-2xl" />
                 <div className="absolute bottom-4 right-4 w-10 h-10 lg:w-14 lg:h-14 border-b-2 border-r-2 border-gold rounded-br-2xl" />
 
-                {/* Top Badge */}
+                {/* Live badge */}
                 <div className="absolute top-4 right-4 lg:top-6 lg:right-6 bg-white/95 backdrop-blur-md px-3 py-2 lg:px-4 lg:py-2.5 rounded-full shadow-lg flex items-center gap-1.5 lg:gap-2">
                   <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                   <span className="text-[9px] lg:text-[10px] uppercase tracking-widest text-charcoal font-medium">
@@ -59,11 +136,11 @@ export default function HeroSection() {
                   </span>
                 </div>
 
-                {/* Product Card — Bottom */}
+                {/* Product card */}
                 <div className="absolute bottom-4 left-4 right-4 lg:bottom-6 lg:left-6 lg:right-6 bg-white/95 backdrop-blur-md rounded-2xl p-3 lg:p-4 shadow-xl">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[9px] lg:text-[10px] uppercase tracking-widest text-gold font-medium mb-0.5 lg:mb-1">
+                      <p className="text-[9px] lg:text-[10px] uppercase tracking-widest text-gold font-medium mb-0.5">
                         Signature
                       </p>
                       <p className="font-serif text-sm lg:text-base text-charcoal truncate">
@@ -82,7 +159,7 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              {/* Decorative frame */}
+              {/* Decorative */}
               <div className="absolute -top-4 -right-4 w-24 h-24 lg:w-32 lg:h-32 border-2 border-gold/30 rounded-3xl -z-10 hidden sm:block" />
               <div className="absolute -bottom-4 -left-4 hidden sm:block">
                 <div className="grid grid-cols-4 gap-1.5 lg:gap-2">
@@ -94,50 +171,93 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* ===== CONTENT (order-2 on mobile, order-1 on desktop) ===== */}
+          {/* ===== CONTENT (Text) ===== */}
           <div className="text-center lg:text-left order-2 lg:order-1 pb-12 lg:pb-16">
-            {/* Top Badge */}
-            <div className="inline-flex items-center gap-2 bg-white border border-gold/30 px-3 py-1.5 lg:px-4 lg:py-2 rounded-full mb-4 lg:mb-6 shadow-sm animate-fade-in">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-white border border-gold/30 px-3 py-1.5 lg:px-4 lg:py-2 rounded-full mb-4 lg:mb-6 shadow-sm">
               <Sparkles size={10} className="text-gold lg:w-3 lg:h-3" />
               <span className="text-[9px] lg:text-[10px] uppercase tracking-[0.25em] text-gold font-medium">
-                {HERO_DATA.subtitle}
+                {hero.badge}
               </span>
             </div>
 
-            {/* Main Heading */}
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-charcoal leading-[1.05] mb-4 lg:mb-6 animate-slide-up">
-              Sunnah in
-              <br />
-              <span className="relative inline-block">
-                <span className="relative z-10 italic">Style</span>
-                <svg
-                  className="absolute -bottom-1 lg:-bottom-2 left-0 w-full"
-                  viewBox="0 0 200 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+            {/* ===== DYNAMIC ROTATING HEADLINE ===== */}
+            <div className="relative mb-4 lg:mb-6">
+              <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-charcoal leading-[1.05]">
+                <span
+                  key={currentHeadline}
+                  className="inline-block animate-slide-up"
                 >
-                  <path
-                    d="M2 9C50 3 150 3 198 9"
-                    stroke="#C8A96B"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
-            </h1>
+                  {current.line1}
+                  <br />
+                  <span className="relative inline-block">
+                    <span className="relative z-10 italic">{current.line2}</span>
+                    <svg
+                      className="absolute -bottom-1 lg:-bottom-2 left-0 w-full"
+                      viewBox="0 0 200 12"
+                      fill="none"
+                    >
+                      <path
+                        d="M2 9C50 3 150 3 198 9"
+                        stroke="#C8A96B"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                </span>
+              </h1>
+
+              {/* Navigation arrows */}
+              {activeHeadlines.length > 1 && (
+                <div className="flex items-center justify-center lg:justify-start gap-2 mt-6">
+                  <button
+                    onClick={goToPrev}
+                    className="p-2 border border-border hover:border-gold hover:text-gold transition-colors rounded-full"
+                    aria-label="Previous"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {/* Dots */}
+                  <div className="flex items-center gap-2 mx-2">
+                    {activeHeadlines.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentHeadline(idx)}
+                        className={`h-1.5 transition-all duration-300 rounded-full ${
+                          idx === currentHeadline
+                            ? "w-8 bg-gold"
+                            : "w-1.5 bg-border hover:bg-gold/50"
+                        }`}
+                        aria-label={`Go to headline ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={goToNext}
+                    className="p-2 border border-border hover:border-gold hover:text-gold transition-colors rounded-full"
+                    aria-label="Next"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Description */}
-            <p className="text-text-secondary text-base lg:text-lg xl:text-xl mb-6 lg:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed animate-slide-up px-2 lg:px-0">
-              {HERO_DATA.description}
+            <p className="text-text-secondary text-base lg:text-lg xl:text-xl mb-6 lg:mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed px-2 lg:px-0">
+              {hero.description}
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-8 lg:mb-12 animate-slide-up px-4 lg:px-0">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-8 lg:mb-12 px-4 lg:px-0">
               <Link
-                href={HERO_DATA.primaryButton.url}
+                href={hero.primaryButton?.url || "/shop"}
                 className="group inline-flex items-center justify-center gap-2 px-6 lg:px-8 py-3.5 lg:py-4 bg-charcoal hover:bg-gold text-white text-xs lg:text-sm uppercase tracking-widest font-medium transition-all duration-300 rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5"
               >
-                {HERO_DATA.primaryButton.label}
+                {hero.primaryButton?.label || "Shop Collection"}
                 <ArrowRight
                   size={14}
                   className="group-hover:translate-x-1 transition-transform"
@@ -145,15 +265,15 @@ export default function HeroSection() {
               </Link>
 
               <Link
-                href={HERO_DATA.secondaryButton.url}
+                href={hero.secondaryButton?.url || "/custom-thobe"}
                 className="inline-flex items-center justify-center px-6 lg:px-8 py-3.5 lg:py-4 bg-white border border-charcoal text-charcoal hover:bg-charcoal hover:text-white text-xs lg:text-sm uppercase tracking-widest font-medium transition-all duration-300 rounded-full"
               >
-                {HERO_DATA.secondaryButton.label}
+                {hero.secondaryButton?.label || "Customize Your Thobe"}
               </Link>
             </div>
 
-            {/* Trust Features */}
-            <div className="grid grid-cols-3 gap-2 lg:gap-4 max-w-md mx-auto lg:mx-0 animate-fade-in px-2 lg:px-0">
+            {/* Trust features */}
+            <div className="grid grid-cols-3 gap-2 lg:gap-4 max-w-md mx-auto lg:mx-0 px-2 lg:px-0">
               {[
                 { icon: Truck, label: "Fast Delivery" },
                 { icon: Shield, label: "Secure Payment" },
@@ -177,7 +297,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Scroll Indicator (Desktop) */}
+      {/* Scroll indicator */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-2 text-text-muted">
         <p className="text-[10px] uppercase tracking-[0.3em]">Scroll</p>
         <div className="w-px h-12 bg-gradient-to-b from-gold to-transparent" />
