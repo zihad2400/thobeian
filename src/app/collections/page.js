@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { ArrowRight } from "lucide-react";
-import { ProductCardSkeleton } from "@/components/ui/Skeleton";
 
 export default function CollectionsPage() {
   const [collections, setCollections] = useState([]);
@@ -64,7 +63,7 @@ export default function CollectionsPage() {
                 <img
                   src={
                     collection.image ||
-                    `https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&q=80`
+                    "/images/categories/thobe.jpg"
                   }
                   alt={collection.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"

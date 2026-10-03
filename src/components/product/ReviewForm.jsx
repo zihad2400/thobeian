@@ -3,7 +3,8 @@
 import { useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { Star, X, Loader2, Send } from "lucide-react";
+import { X, Loader2, Send } from "lucide-react";
+import RatingStars from "@/components/ui/RatingStars";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 
@@ -12,7 +13,6 @@ export default function ReviewForm({ productSlug, onSuccess, onCancel }) {
   const router = useRouter();
 
   const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -53,7 +53,7 @@ export default function ReviewForm({ productSlug, onSuccess, onCancel }) {
 
   if (!user) {
     return (
-      <div className="bg-background-luxury border border-border p-6 text-center">
+      <div className="bg-background-luxury border border-border p-6 text-center rounded-2xl">
         <p className="text-sm text-text-secondary mb-4">
           Please login to write a review
         </p>
@@ -67,10 +67,18 @@ export default function ReviewForm({ productSlug, onSuccess, onCancel }) {
     );
   }
 
+  const ratingLabels = {
+    1: "Poor",
+    2: "Fair",
+    3: "Good",
+    4: "Very Good",
+    5: "Excellent",
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-border p-6 animate-slide-down"
+      className="bg-white border border-border p-6 animate-slide-down rounded-2xl"
     >
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-serif text-lg text-charcoal">Write a Review</h3>
@@ -85,37 +93,51 @@ export default function ReviewForm({ productSlug, onSuccess, onCancel }) {
         )}
       </div>
 
-      {/* Rating */}
+      {/* ===== DYNAMIC RATING STARS ===== */}
       <div className="mb-5">
-        <label className="text-xs uppercase tracking-widest text-text-muted mb-2 block">
+        <label className="text-xs uppercase tracking-widest text-text-muted mb-3 block">
           Your Rating *
         </label>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() => setRating(star)}
-              onMouseEnter={() => setHoverRating(star)}
-              onMouseLeave={() => setHoverRating(0)}
-              className="p-1 transition-transform hover:scale-110"
+
+        <RatingStars
+          value={rating}
+          onChange={setRating}
+          size={32}
+          showCount={false}
+        />
+
+        {/* Rating Label */}
+        {rating > 0 && (
+          <div className="mt-3 flex items-center gap-2">
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                rating === 5
+                  ? "bg-success/10 text-success"
+                  : rating === 4
+                  ? "bg-info/10 text-info"
+                  : rating === 3
+                  ? "bg-warning/10 text-warning"
+                  : "bg-error/10 text-error"
+              }`}
             >
-              <Star
-                size={28}
-                className={
-                  star <= (hoverRating || rating)
-                    ? "fill-gold text-gold"
-                    : "text-gray-300"
-                }
+              {ratingLabels[rating]} — {rating} out of 5 stars
+            </div>
+          </div>
+        )}
+
+        {/* Visual Progress Bars */}
+        {rating > 0 && (
+          <div className="mt-4 flex gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <div
+                key={n}
+                className={`h-1 flex-1 transition-all duration-300 rounded-full ${
+                  n <= rating ? "bg-gold" : "bg-border"
+                }`}
               />
-            </button>
-          ))}
-          {rating > 0 && (
-            <span className="ml-2 text-sm text-charcoal font-medium">
-              {["Poor", "Fair", "Good", "Very Good", "Excellent"][rating - 1]}
-            </span>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Title */}
@@ -129,7 +151,7 @@ export default function ReviewForm({ productSlug, onSuccess, onCancel }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Summarize your experience"
           maxLength={100}
-          className="input-luxury"
+          className="input-luxury rounded-xl"
         />
       </div>
 
@@ -144,7 +166,7 @@ export default function ReviewForm({ productSlug, onSuccess, onCancel }) {
           placeholder="Share your honest experience about this product..."
           rows={5}
           maxLength={1000}
-          className="input-luxury resize-none"
+          className="input-luxury resize-none rounded-xl"
           required
         />
         <p className="text-[10px] text-text-muted mt-1">
@@ -156,8 +178,8 @@ export default function ReviewForm({ productSlug, onSuccess, onCancel }) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={submitting}
-          className="btn-primary text-xs py-2.5 px-6 flex items-center gap-2 disabled:opacity-50"
+          disabled={submitting || !rating || !comment.trim()}
+          className="btn-primary text-xs py-2.5 px-6 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? (
             <>

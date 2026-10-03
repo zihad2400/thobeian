@@ -35,26 +35,47 @@ export const CATEGORIES = [
     image: "/images/categories/thobe.jpg",
     productCount: 24,
   },
-
   {
     name: "Panjabi",
     slug: "panjabi",
     image: "/images/categories/panjabi.jpg",
     productCount: 32,
   },
-
   {
     name: "Fabrics",
     slug: "fabrics",
     image: "/images/categories/fabrics.jpg",
     productCount: 12,
   },
-
   {
     name: "Custom Thobe",
     slug: "custom-thobe",
     image: "/images/categories/custom-thobe.jpg",
     productCount: 0,
+  },
+  {
+    name: "Premium Thobe",
+    slug: "premium-signature-thobe",
+    image: "/images/products/thobe/premium-signature-thobe.jpg",
+    productCount: 8,
+  },
+  {
+    name: "Classic Saudi",
+    slug: "classic-saudi-thobe",
+    image: "/images/products/thobe/classic-saudi-thobe.jpg",
+    productCount: 6,
+  },
+  {
+    name: "Emirati Style",
+    slug: "emirati-style-thobe",
+    image: "/images/products/thobe/emirati-style-thobe.jpg",
+    productCount: 5,
+  },
+  {
+    name: "Royal Black",
+    slug: "royal-black-thobe",
+    image: "/images/products/thobe/royal-black-thobe.jpg",
+    productCount: 4,
   },
 ];
 

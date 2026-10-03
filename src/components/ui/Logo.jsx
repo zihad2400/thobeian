@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function Logo({ className = "" }) {
   const router = useRouter();
@@ -9,7 +10,6 @@ export default function Logo({ className = "" }) {
   const handleClick = (e) => {
     e.preventDefault();
     router.push("/");
-    // Force scroll to top
     window.scrollTo({ top: 0, behavior: "instant" });
   };
 
@@ -17,9 +17,30 @@ export default function Logo({ className = "" }) {
     <Link
       href="/"
       onClick={handleClick}
-      className={`font-serif text-2xl md:text-3xl tracking-wider text-charcoal hover:text-gold transition-colors ${className}`}
+      className={`flex items-center gap-2 md:gap-3 group ${className}`}
+      aria-label="THOBEIAN Home"
     >
-      THOBEIAN
+      {/* Logo Icon Image */}
+      <div className="relative w-9 h-9 md:w-11 md:h-11 shrink-0 rounded-lg overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300">
+        <Image
+          src="/images/logo/thobeian-favicon.png"
+          alt="THOBEIAN"
+          fill
+          sizes="44px"
+          className="object-contain"
+          priority
+        />
+      </div>
+
+      {/* Brand Text */}
+      <div className="flex flex-col justify-center leading-none">
+        <span className="font-serif text-xl md:text-2xl lg:text-3xl tracking-[0.15em] text-charcoal group-hover:text-gold transition-colors duration-300">
+          THOBEIAN
+        </span>
+        <span className="hidden md:block text-[8px] uppercase tracking-[0.4em] text-gold/70 mt-1 ml-0.5">
+          Premium Islamic
+        </span>
+      </div>
     </Link>
   );
 }

@@ -50,38 +50,66 @@ export default function FeaturedProducts() {
     colors: p.colors || [],
   });
 
+  // Split products into two rows of 4
+  const firstRow = products.slice(0, 4);
+  const secondRow = products.slice(0, 4); // ← Same 4 products (duplicate)
+
+  // For loading state — 4 skeletons per row
+  const loadingRow = [...Array(4)];
+
   return (
     <section className="section-padding bg-background-secondary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 md:mb-14 gap-4">
           <div>
             <p className="heading-sub">Handpicked For You</p>
             <h2 className="heading-section mb-0">Featured Products</h2>
           </div>
           <Link
             href="/shop"
-            className="inline-flex items-center gap-2 text-sm uppercase tracking-widest text-charcoal hover:text-gold transition-colors"
+            className="inline-flex items-center gap-2 text-sm uppercase tracking-widest text-charcoal hover:text-gold transition-colors group"
           >
-            View All <ArrowRight size={14} />
+            View All
+            <ArrowRight
+              size={14}
+              className="group-hover:translate-x-1 transition-transform"
+            />
           </Link>
         </div>
 
+        {/* ROW 1 */}
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {[...Array(8)].map((_, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mb-5 md:mb-6">
+            {loadingRow.map((_, i) => (
               <ProductCardSkeleton key={i} />
             ))}
           </div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-text-secondary">
-              No featured products yet. Add some via admin panel.
-            </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mb-5 md:mb-6">
+            {firstRow.map((p, idx) => (
+              <ProductCard
+                key={`row1-${p._id}-${idx}`}
+                product={normalize(p)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ROW 2 — Same products, different key */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
+            {loadingRow.map((_, i) => (
+              <ProductCardSkeleton key={`skeleton-2-${i}`} />
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {products.map((p) => (
-              <ProductCard key={p._id} product={normalize(p)} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
+            {secondRow.map((p, idx) => (
+              <ProductCard
+                key={`row2-${p._id}-${idx}`}
+                product={normalize(p)}
+              />
             ))}
           </div>
         )}

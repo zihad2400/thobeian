@@ -5,7 +5,7 @@ import Order from "@/models/Order";
 import { getCurrentUser } from "@/lib/auth";
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 
-// ===== GET: List reviews for a product =====
+// ===== GET: List reviews =====
 export async function GET(req, { params }) {
   try {
     await connectDB();
@@ -22,13 +22,13 @@ export async function GET(req, { params }) {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Calculate average
     const avgRating =
       reviews.length > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        ? Math.round(
+            (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10
+          ) / 10
         : 0;
 
-    // Rating distribution
     const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     reviews.forEach((r) => {
       if (distribution[r.rating] !== undefined) distribution[r.rating]++;
@@ -37,7 +37,7 @@ export async function GET(req, { params }) {
     return successResponse({
       reviews,
       summary: {
-        average: Math.round(avgRating * 10) / 10,
+        average: avgRating,
         total: reviews.length,
         distribution,
       },
@@ -47,7 +47,7 @@ export async function GET(req, { params }) {
   }
 }
 
-// ===== POST: Submit a review =====
+// ===== POST: Submit review =====
 export async function POST(req, { params }) {
   try {
     await connectDB();
@@ -65,7 +65,7 @@ export async function POST(req, { params }) {
     const product = await Product.findOne({ slug }).select("_id").lean();
     if (!product) return errorResponse("Product not found", 404);
 
-    // Check if already reviewed
+    // Check duplicate
     const existing = await ProductReview.findOne({
       product: product._id,
       user: user._id,
@@ -74,7 +74,7 @@ export async function POST(req, { params }) {
       return errorResponse("You have already reviewed this product", 409);
     }
 
-    // Check if verified purchase
+    // Check verified purchase
     const order = await Order.findOne({
       user: user._id,
       "items.product": product._id,
@@ -90,7 +90,7 @@ export async function POST(req, { params }) {
       comment,
       images: images || [],
       isVerifiedPurchase: !!order,
-      status: "pending", // Admin approve করতে হবে
+      status: "pending", // Admin approve করবে
     });
 
     return successResponse(

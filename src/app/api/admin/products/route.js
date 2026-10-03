@@ -1,10 +1,15 @@
 import connectDB from "@/lib/mongodb";
+
+// ⚠️ IMPORT all models
 import Product from "@/models/Product";
+import Category from "@/models/Category";
+import Collection from "@/models/Collection";
+import Fabric from "@/models/Fabric";
+
 import { getCurrentUser } from "@/lib/auth";
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 import { createSlug } from "@/lib/slugify";
 
-// ===== GET: List all products =====
 export async function GET(req) {
   try {
     await connectDB();
@@ -36,7 +41,6 @@ export async function GET(req) {
   }
 }
 
-// ===== POST: Create product =====
 export async function POST(req) {
   try {
     await connectDB();
@@ -53,7 +57,6 @@ export async function POST(req) {
 
     const slug = createSlug(body.name);
 
-    // Check duplicate slug
     const existing = await Product.findOne({ slug });
     if (existing) {
       return errorResponse("Product with this name exists", 409);

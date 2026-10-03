@@ -1,6 +1,11 @@
 import connectDB from "@/lib/mongodb";
+
+// ⚠️ IMPORT all models (needed for populate)
 import Product from "@/models/Product";
 import Category from "@/models/Category";
+import Collection from "@/models/Collection";
+import Fabric from "@/models/Fabric";
+
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 
 export async function GET(req) {
@@ -21,7 +26,6 @@ export async function GET(req) {
 
     const skip = (page - 1) * limit;
 
-    // Build filter
     const filter = { status: "published" };
 
     if (category) {
@@ -46,7 +50,6 @@ export async function GET(req) {
     if (bestseller === "true") filter.bestseller = true;
     if (newArrival === "true") filter.newArrival = true;
 
-    // Sort
     const sortMap = {
       newest: { createdAt: -1 },
       oldest: { createdAt: 1 },
@@ -59,7 +62,6 @@ export async function GET(req) {
     };
     const sortOption = sortMap[sort] || sortMap.newest;
 
-    // Execute
     const [products, total] = await Promise.all([
       Product.find(filter).sort(sortOption).skip(skip).limit(limit).lean(),
       Product.countDocuments(filter),

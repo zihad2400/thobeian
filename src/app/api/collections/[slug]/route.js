@@ -1,6 +1,11 @@
 import connectDB from "@/lib/mongodb";
+
+// ⚠️ IMPORT all models
 import Collection from "@/models/Collection";
 import Product from "@/models/Product";
+import Category from "@/models/Category";
+import Fabric from "@/models/Fabric";
+
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 
 export async function GET(req, { params }) {

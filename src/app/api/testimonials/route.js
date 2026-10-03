@@ -1,67 +1,59 @@
 import connectDB from "@/lib/mongodb";
 import Testimonial from "@/models/Testimonial";
-import { getCurrentUser } from "@/lib/auth";
+import ProductReview from "@/models/ProductReview";
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 
-// ===== GET: List testimonials =====
 export async function GET(req) {
   try {
     await connectDB();
-    const { searchParams } = new URL(req.url);
-    const featured = searchParams.get("featured");
-    const limit = parseInt(searchParams.get("limit") || "10");
 
-    const filter = { isActive: true };
-    if (featured === "true") filter.isFeatured = true;
-
-    const testimonials = await Testimonial.find(filter)
-      .sort({ sortOrder: 1, createdAt: -1 })
-      .limit(limit)
+    // ===== 1. Fetch REAL customer reviews (approved) =====
+    const realReviews = await ProductReview.find({
+      status: "approved",
+      comment: { $exists: true, $ne: "" },
+    })
+      .populate("user", "name city avatar")
+      .populate("product", "name slug images")
+      .sort({ createdAt: -1 })
+      .limit(8)
       .lean();
 
-    return successResponse({ testimonials });
+    const reviewTestimonials = realReviews
+      .filter((r) => r.user && r.comment)
+      .map((r) => ({
+        _id: r._id,
+        name: r.user?.name || "Verified Customer",
+        city: r.user?.city || "Bangladesh",
+        rating: r.rating,
+        comment: r.comment,
+        productImage: r.product?.images?.[0] || "",
+        productName: r.product?.name || "",
+        productSlug: r.product?.slug || "",
+        avatar: r.user?.avatar || "",
+        isVerifiedPurchase: r.isVerifiedPurchase,
+        source: "customer",
+        createdAt: r.createdAt,
+      }));
+
+    // ===== 2. Fetch Admin testimonials =====
+    const adminTestimonials = await Testimonial.find({
+      isActive: true,
+      isFeatured: true,
+    })
+      .sort({ sortOrder: 1, createdAt: -1 })
+      .limit(8)
+      .lean();
+
+    // ===== 3. Combine =====
+    const allTestimonials = [
+      ...reviewTestimonials,
+      ...adminTestimonials.map((t) => ({ ...t, source: "admin" })),
+    ].slice(0, 8);
+
+    // ⚠️ NO FALLBACK — if empty, return empty
+    return successResponse({ testimonials: allTestimonials });
   } catch (error) {
     console.error("Testimonials GET error:", error);
-    return errorResponse(error.message, 500);
-  }
-}
-
-// ===== POST: Create testimonial =====
-export async function POST(req) {
-  try {
-    await connectDB();
-    const user = await getCurrentUser();
-    if (!user) return errorResponse("Unauthorized", 401);
-
-    const body = await req.json();
-    const { name, city, rating, comment } = body;
-
-    if (!name || !comment || !rating) {
-      return errorResponse("Name, rating, and comment are required", 400);
-    }
-
-    // Only admin can create directly, customers go to "pending"
-    const isAdmin = user.role === "admin" || user.role === "superadmin";
-
-    const testimonial = await Testimonial.create({
-      name,
-      city: city || "Dhaka",
-      rating: Number(rating),
-      comment,
-      source: isAdmin ? "admin" : "customer",
-      isActive: isAdmin, // Admin submissions auto-approve, customer go to pending
-      isFeatured: isAdmin,
-    });
-
-    return successResponse(
-      { testimonial },
-      isAdmin
-        ? "Testimonial added"
-        : "Thank you! Your review will be published after approval.",
-      201
-    );
-  } catch (error) {
-    console.error("Testimonials POST error:", error);
     return errorResponse(error.message, 500);
   }
 }

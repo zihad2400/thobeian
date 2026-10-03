@@ -81,7 +81,7 @@ export default function CollectionDetailPage() {
           src={
             collection.bannerImage ||
             collection.image ||
-            "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=1600&q=80"
+            "/images/categories/thobe.jpg"
           }
           alt={collection.name}
           className="w-full h-full object-cover"
@@ -129,7 +129,7 @@ export default function CollectionDetailPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
             {products.map((p) => (
               <ProductCard key={p._id} product={normalizeProduct(p)} />
             ))}

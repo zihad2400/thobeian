@@ -20,13 +20,13 @@ import {
 export const metadata = {
   title: "About Us — Our Story & Values",
   description:
-    "Learn about THOBEIAN — Bangladesh's premium Islamic fashion brand. Our story, our values, and our commitment to Sunnah-inspired elegance.",
+    "Learn about THOBEIAN — Bangladesh's premium Islamic fashion brand.",
 };
 
 export default function AboutPage() {
   return (
     <div className="bg-white">
-      {/* ==================== HERO ==================== */}
+      {/* HERO */}
       <section className="relative bg-background-luxury py-24 md:py-32 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <p className="heading-sub">Since 2020</p>
@@ -36,20 +36,19 @@ export default function AboutPage() {
           </h1>
           <p className="text-text-secondary text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
             THOBEIAN is Bangladesh's premier Islamic fashion house — where
-            traditional elegance meets contemporary craftsmanship. Every thobe,
-            panjabi, and fabric tells a story of devotion, quality, and pride.
+            traditional elegance meets contemporary craftsmanship.
           </p>
           <div className="divider-gold mt-10" />
         </div>
       </section>
 
-      {/* ==================== OUR STORY ==================== */}
+      {/* OUR STORY */}
       <section className="section-padding">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&q=80"
+                src="/images/home/brand-story.jpg"
                 alt="Our Story"
                 className="w-full aspect-[4/5] object-cover"
               />
@@ -64,20 +63,15 @@ export default function AboutPage() {
                 <p>
                   <strong className="text-charcoal">THOBEIAN</strong> was born
                   in 2020 from a simple yet powerful vision — to make premium
-                  Islamic fashion accessible to every Muslim gentleman who
-                  values both tradition and elegance.
+                  Islamic fashion accessible to every Muslim gentleman.
                 </p>
                 <p>
                   What started as a small tailoring workshop in Dhaka has grown
                   into one of Bangladesh's most trusted Islamic fashion brands.
-                  Today, we serve thousands of customers across the country —
-                  from Dhaka to Sylhet, from Chittagong to Rajshahi — delivering
-                  quality that speaks for itself.
                 </p>
                 <p>
-                  Every piece we create is a labor of love. We don't just sell
-                  clothing — we craft garments that honor the Sunnah, respect
-                  tradition, and elevate your everyday elegance.
+                  Every piece we create is a labor of love — honoring tradition
+                  while embracing contemporary elegance.
                 </p>
               </div>
 
@@ -100,7 +94,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ==================== MISSION & VISION ==================== */}
+      {/* MISSION & VISION */}
       <section className="section-padding bg-background-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
@@ -118,9 +112,7 @@ export default function AboutPage() {
               </h3>
               <p className="text-text-secondary leading-relaxed">
                 To craft premium Islamic clothing that empowers Muslim men to
-                embrace their identity with confidence and elegance. We aim to
-                make high-quality thobes and panjabis accessible to every
-                household in Bangladesh and beyond.
+                embrace their identity with confidence and elegance.
               </p>
             </div>
 
@@ -133,66 +125,33 @@ export default function AboutPage() {
               </h3>
               <p className="text-text-secondary leading-relaxed">
                 To become South Asia's most trusted Islamic fashion brand —
-                known not just for our premium quality, but for our unwavering
-                commitment to Islamic values, customer satisfaction, and
-                craftsmanship excellence.
+                known for quality and unwavering commitment to values.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ==================== WHY CHOOSE US ==================== */}
+      {/* WHY CHOOSE US */}
       <section className="section-padding bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="heading-sub">Why THOBEIAN</p>
             <h2 className="heading-section">Why Choose Us</h2>
-            <p className="text-text-secondary max-w-2xl mx-auto mt-4">
-              We're not just another clothing brand. Here's what makes THOBEIAN
-              different.
-            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              {
-                icon: Award,
-                title: "Premium Quality",
-                desc: "We source only the finest fabrics from Egypt, Ireland, Pakistan, and Turkey. Every stitch is a promise of excellence.",
-              },
-              {
-                icon: Sparkles,
-                title: "Handcrafted Elegance",
-                desc: "Each garment is carefully tailored by experienced craftsmen who have mastered the art of Islamic fashion.",
-              },
-              {
-                icon: Truck,
-                title: "Fast Nationwide Delivery",
-                desc: "Inside Dhaka within 1-2 days, outside Dhaka within 2-4 days. Express delivery available.",
-              },
-              {
-                icon: ShieldCheck,
-                title: "Secure Payment",
-                desc: "Pay securely with bKash, Nagad, SSLCommerz, or choose Cash on Delivery for your convenience.",
-              },
-              {
-                icon: RotateCcw,
-                title: "Easy Returns",
-                desc: "7-day hassle-free return policy. Not satisfied? We'll make it right.",
-              },
-              {
-                icon: Heart,
-                title: "Customer First",
-                desc: "10,000+ satisfied customers across Bangladesh. We're committed to your happiness.",
-              },
+              { icon: Award, title: "Premium Quality", desc: "Finest fabrics from Egypt, Ireland, Pakistan, Turkey." },
+              { icon: Sparkles, title: "Handcrafted Elegance", desc: "Master craftsmen with decades of experience." },
+              { icon: Truck, title: "Fast Delivery", desc: "Nationwide delivery within 1-4 days." },
+              { icon: ShieldCheck, title: "Secure Payment", desc: "bKash, Nagad, COD, Card payments." },
+              { icon: RotateCcw, title: "Easy Returns", desc: "7-day hassle-free return policy." },
+              { icon: Heart, title: "Customer First", desc: "10,000+ satisfied customers." },
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
-                <div
-                  key={idx}
-                  className="p-6 border border-border hover:border-gold/40 hover:shadow-card transition-all duration-300"
-                >
+                <div key={idx} className="p-6 border border-border hover:border-gold/40 transition-all">
                   <div className="inline-flex items-center justify-center w-14 h-14 bg-gold/10 text-gold mb-5">
                     <Icon size={24} />
                   </div>
@@ -209,16 +168,14 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ==================== STATS ==================== */}
+      {/* STATS */}
       <section className="section-padding bg-charcoal text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <p className="text-xs uppercase tracking-[0.2em] text-gold font-medium mb-3">
               Our Numbers
             </p>
-            <h2 className="font-serif text-3xl md:text-4xl">
-              By the Numbers
-            </h2>
+            <h2 className="font-serif text-3xl md:text-4xl">By the Numbers</h2>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
@@ -245,170 +202,15 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ==================== OUR VALUES ==================== */}
-      <section className="section-padding bg-background-secondary">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="heading-sub">What We Stand For</p>
-            <h2 className="heading-section">Our Core Values</h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                title: "Faith First",
-                desc: "Every decision we make is guided by Islamic principles. We honor the Sunnah in everything we do.",
-              },
-              {
-                title: "Uncompromising Quality",
-                desc: "We never cut corners. From fabric to stitching to packaging — excellence is our standard.",
-              },
-              {
-                title: "Honesty & Transparency",
-                desc: "Clear pricing, honest product descriptions, no hidden charges. Trust is the foundation of our business.",
-              },
-              {
-                title: "Customer Obsession",
-                desc: "Your satisfaction is our success. We go above and beyond to make sure you love what you receive.",
-              },
-            ].map((value, idx) => (
-              <div key={idx} className="flex gap-4">
-                <div className="shrink-0">
-                  <div className="w-10 h-10 bg-gold text-white flex items-center justify-center">
-                    <Check size={20} />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-serif text-xl text-charcoal mb-2">
-                    {value.title}
-                  </h3>
-                  <p className="text-text-secondary leading-relaxed">
-                    {value.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== FABRIC SOURCES ==================== */}
-      <section className="section-padding bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="heading-sub">Sourced Globally</p>
-            <h2 className="heading-section">Our Premium Fabrics</h2>
-            <p className="text-text-secondary max-w-2xl mx-auto mt-4">
-              We travel the world to bring you the finest fabrics — because
-              premium quality starts at the source.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { country: "Egypt", fabric: "Premium Cotton" },
-              { country: "Ireland", fabric: "Pure Linen" },
-              { country: "Pakistan", fabric: "Traditional Blend" },
-              { country: "Turkey", fabric: "Luxury Weaves" },
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className="text-center p-6 border border-border hover:border-gold/40 transition-colors"
-              >
-                <p className="text-xs uppercase tracking-widest text-gold mb-2">
-                  {item.country}
-                </p>
-                <p className="font-serif text-lg text-charcoal">
-                  {item.fabric}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== TESTIMONIAL / TRUST ==================== */}
-      <section className="section-padding bg-charcoal text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-gold mb-6">
-            Our Promise
-          </p>
-          <blockquote className="font-serif text-2xl md:text-4xl leading-relaxed mb-8">
-            "We don't just sell clothing. We craft garments that honor your
-            faith, elevate your style, and become a part of your most precious
-            moments."
-          </blockquote>
-          <p className="text-white/60 text-sm uppercase tracking-widest">
-            — The THOBEIAN Team
-          </p>
-        </div>
-      </section>
-
-      {/* ==================== CONTACT INFO ==================== */}
-      <section className="section-padding bg-background-luxury">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="heading-sub">Get In Touch</p>
-            <h2 className="heading-section">We'd Love to Hear From You</h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: MapPin,
-                title: "Visit Us",
-                lines: ["Dhanmondi, Dhaka", "Bangladesh"],
-              },
-              {
-                icon: Mail,
-                title: "Email Us",
-                lines: ["hello@thobeian.com", "support@thobeian.com"],
-              },
-              {
-                icon: Phone,
-                title: "Call Us",
-                lines: ["+880 1XXX-XXXXXX", "Sat-Thu, 10AM-8PM"],
-              },
-            ].map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={idx}
-                  className="text-center p-8 bg-white border border-border hover:border-gold/40 transition-colors"
-                >
-                  <div className="inline-flex items-center justify-center w-14 h-14 bg-gold/10 text-gold mb-5">
-                    <Icon size={24} />
-                  </div>
-                  <h3 className="font-serif text-xl text-charcoal mb-3">
-                    {item.title}
-                  </h3>
-                  {item.lines.map((line, i) => (
-                    <p key={i} className="text-sm text-text-secondary">
-                      {line}
-                    </p>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ==================== FINAL CTA ==================== */}
+      {/* FINAL CTA */}
       <section className="section-padding bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="heading-sub">Ready to Experience</p>
           <h2 className="font-serif text-3xl md:text-5xl text-charcoal mb-6">
             Discover THOBEIAN Today
           </h2>
-          <p className="text-text-secondary text-lg mb-10 max-w-2xl mx-auto">
-            Browse our premium collection, or design your own custom thobe
-            tailored just for you.
-          </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Link href="/shop" className="btn-primary">
-              Shop Collection
-            </Link>
+            <Link href="/shop" className="btn-primary">Shop Collection</Link>
             <Link href="/custom-thobe" className="btn-outline">
               Customize Your Thobe
             </Link>
