@@ -1,5 +1,5 @@
 // ================================================================
-// NAVBAR DATA (Temporary — পরে Admin Panel থেকে dynamic হবে)
+// NAVBAR DATA
 // ================================================================
 
 export const NAVBAR_MENU = [
@@ -22,15 +22,17 @@ export const NAVBAR_MENU = [
         {
           title: "Shop by Category",
           items: [
-            { label: "Premium Panjabi", url: "/c/premium-panjabi" },
-            { label: "Classic Panjabi", url: "/c/classic-panjabi" },
-            { label: "Pakistani Panjabi", url: "/c/pakistani-panjabi" },
-            { label: "Band Collar", url: "/c/band-collar" },
+            { label: "Premium Thobe", url: "/c/premium-thobe" },
+            { label: "Classic Thobe", url: "/c/classic-thobe" },
+            { label: "Saudi Thobe", url: "/c/saudi-thobe" },
+            { label: "Emirati Thobe", url: "/c/emirati-thobe" },
+            { label: "Moroccan Thobe", url: "/c/moroccan-thobe" },
+            { label: "Royal Black Thobe", url: "/c/royal-black-thobe" },
           ],
         },
       ],
       featured: {
-        image: "",
+        image: "/images/products/thobe/premium-signature-thobe.jpg",
         title: "Signature Thobe",
         cta: "Shop Now",
         url: "/thobe",
@@ -49,12 +51,12 @@ export const NAVBAR_MENU = [
             { label: "Premium Panjabi", url: "/c/premium-panjabi" },
             { label: "Classic Panjabi", url: "/c/classic-panjabi" },
             { label: "Pakistani Panjabi", url: "/c/pakistani-panjabi" },
-            { label: "Band Collar", url: "/c/band-collar" },
+            { label: "Band Collar Panjabi", url: "/c/band-collar-panjabi" },
           ],
         },
       ],
       featured: {
-        image: "",
+        image: "/images/products/panjabi/premium-embroidered-panjabi.jpg",
         title: "Eid Panjabi Collection",
         cta: "Shop Eid",
         url: "/panjabi",
@@ -79,7 +81,7 @@ export const NAVBAR_MENU = [
         },
       ],
       featured: {
-        image: "",
+        image: "/images/categories/fabrics.jpg",
         title: "Premium Fabrics",
         cta: "Explore",
         url: "/fabrics",

@@ -27,16 +27,25 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [closeTimer, setCloseTimer] = useState(null);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
-  const user = useAuthStore((s) => s.user);
+  const { user, initialized } = useAuthStore();
   const cartCount = useCartStore((s) =>
     s.items.reduce((sum, item) => sum + item.quantity, 0)
   );
   const wishlistCount = useWishlistStore((s) => s.items.length);
 
-  // 🔐 Check if user is admin
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin =
+    mounted &&
+    initialized &&
+    user !== null &&
+    user !== undefined &&
+    (user?.role === "admin" || user?.role === "superadmin");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -89,16 +98,20 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
             <button
-              className="lg:hidden p-2"
+              className="lg:hidden p-2 shrink-0"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
               <Menu size={22} />
             </button>
 
-            <Logo className="lg:flex-1" />
+            {/* Logo */}
+            <div className="shrink-0">
+              <Logo />
+            </div>
 
-            <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+            {/* Desktop Nav */}
+            <nav className="hidden lg:flex items-center gap-0 flex-1 justify-center px-4">
               {menuItems.map((item, idx) => {
                 const active = isActive(item);
                 return (
@@ -112,7 +125,7 @@ export default function Navbar() {
                   >
                     <Link
                       href={item.url}
-                      className={`flex items-center gap-1 px-4 py-2 text-sm tracking-wider uppercase transition-colors relative ${
+                      className={`flex items-center gap-1.5 px-3 xl:px-4 py-2 text-sm tracking-wide uppercase transition-colors relative whitespace-nowrap ${
                         active || openDropdown === idx
                           ? "text-gold"
                           : "text-charcoal hover:text-gold"
@@ -145,8 +158,8 @@ export default function Navbar() {
               })}
             </nav>
 
-            <div className="flex items-center gap-1 md:gap-2 lg:flex-1 lg:justify-end">
-              {/* 🔐 ADMIN PANEL BUTTON — only for admin */}
+            {/* Right Icons */}
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               {isAdmin && (
                 <Link
                   href="/admin"
@@ -162,17 +175,14 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {/* 🔍 SEARCH */}
               <button
                 onClick={() => setSearchOpen(true)}
                 className="p-2 hover:text-gold transition-colors"
                 aria-label="Search"
-                title="Search (Ctrl+K)"
               >
                 <Search size={20} />
               </button>
 
-              {/* ❤️ WISHLIST */}
               <Link
                 href="/wishlist"
                 className={`relative p-2 transition-colors hidden sm:block ${
@@ -188,7 +198,6 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* 👤 ACCOUNT */}
               <Link
                 href={user ? "/account" : "/login"}
                 className={`p-2 transition-colors hidden sm:block ${
@@ -201,7 +210,6 @@ export default function Navbar() {
                 <User size={20} />
               </Link>
 
-              {/* 🛒 CART */}
               <Link
                 href="/cart"
                 className={`relative p-2 transition-colors ${
@@ -243,14 +251,14 @@ function DropdownMenu({ item, onClose }) {
       className="absolute left-1/2 -translate-x-1/2 top-full pt-3 z-50"
       onMouseLeave={onClose}
     >
-      <div className="bg-white border border-border shadow-luxury min-w-[280px] animate-slide-down">
-        <div className="p-6">
+      <div className="bg-white border border-border shadow-luxury min-w-[260px] animate-slide-down rounded-2xl overflow-hidden">
+        <div className="p-5">
           {dropdown.columns.map((column, idx) => (
             <div key={idx}>
               <h4 className="text-[10px] uppercase tracking-[0.2em] text-gold font-semibold mb-4 pb-2 border-b border-border">
                 {column.title}
               </h4>
-              <ul className="space-y-3">
+              <ul className="space-y-2.5">
                 {column.items.map((subItem, subIdx) => (
                   <li key={subIdx}>
                     <Link
@@ -267,7 +275,7 @@ function DropdownMenu({ item, onClose }) {
           ))}
         </div>
 
-        <div className="border-t border-border px-6 py-3 bg-background-secondary">
+        <div className="border-t border-border px-5 py-3 bg-background-secondary">
           <Link
             href={item.url}
             onClick={onClose}
