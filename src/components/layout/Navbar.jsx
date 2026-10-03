@@ -15,6 +15,7 @@ import {
 import Logo from "@/components/ui/Logo";
 import MobileMenu from "./MobileMenu";
 import SearchOverlay from "./SearchOverlay";
+import AnnouncementBar from "./AnnouncementBar";
 import { NAVBAR_MENU } from "@/config/navbarData";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
@@ -86,9 +87,8 @@ export default function Navbar() {
 
   return (
     <>
-      <div className="bg-charcoal text-white text-xs text-center py-2 tracking-wider">
-        FREE SHIPPING ON ORDERS ABOVE ৳5000 • EID COLLECTION NOW LIVE
-      </div>
+      {/* Dynamic Announcement Bar */}
+      <AnnouncementBar />
 
       <header
         className={`sticky top-0 z-50 bg-white transition-shadow ${
@@ -105,12 +105,10 @@ export default function Navbar() {
               <Menu size={22} />
             </button>
 
-            {/* Logo */}
             <div className="shrink-0">
               <Logo />
             </div>
 
-            {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-0 flex-1 justify-center px-4">
               {menuItems.map((item, idx) => {
                 const active = isActive(item);
@@ -158,7 +156,6 @@ export default function Navbar() {
               })}
             </nav>
 
-            {/* Right Icons */}
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
               {isAdmin && (
                 <Link
