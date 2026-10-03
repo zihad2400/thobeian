@@ -95,20 +95,23 @@ export default function Navbar() {
           scrolled ? "shadow-soft" : ""
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 md:h-20 gap-2">
+            {/* Mobile Menu Button */}
             <button
-              className="lg:hidden p-2 shrink-0"
+              className="lg:hidden p-1.5 shrink-0"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
-              <Menu size={22} />
+              <Menu size={20} />
             </button>
 
+            {/* Logo */}
             <div className="shrink-0">
               <Logo />
             </div>
 
+            {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-0 flex-1 justify-center px-4">
               {menuItems.map((item, idx) => {
                 const active = isActive(item);
@@ -156,7 +159,9 @@ export default function Navbar() {
               })}
             </nav>
 
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
+            {/* Right Icons — Visible on ALL devices */}
+            <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 shrink-0">
+              {/* Admin Button (Desktop only) */}
               {isAdmin && (
                 <Link
                   href="/admin"
@@ -172,51 +177,55 @@ export default function Navbar() {
                 </Link>
               )}
 
+              {/* Search — Mobile + Desktop */}
               <button
                 onClick={() => setSearchOpen(true)}
-                className="p-2 hover:text-gold transition-colors"
+                className="p-1.5 sm:p-2 hover:text-gold transition-colors"
                 aria-label="Search"
               >
-                <Search size={20} />
+                <Search size={18} className="sm:w-5 sm:h-5" />
               </button>
 
+              {/* Wishlist — Mobile + Desktop (NO hidden) */}
               <Link
                 href="/wishlist"
-                className={`relative p-2 transition-colors hidden sm:block ${
+                className={`relative p-1.5 sm:p-2 transition-colors ${
                   pathname === "/wishlist" ? "text-gold" : "hover:text-gold"
                 }`}
                 aria-label="Wishlist"
               >
-                <Heart size={20} />
+                <Heart size={18} className="sm:w-5 sm:h-5" />
                 {wishlistCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-gold text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 bg-gold text-white text-[9px] sm:text-[10px] font-bold rounded-full min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center">
                     {wishlistCount > 99 ? "99+" : wishlistCount}
                   </span>
                 )}
               </Link>
 
+              {/* Account — Mobile + Desktop (NO hidden) */}
               <Link
                 href={user ? "/account" : "/login"}
-                className={`p-2 transition-colors hidden sm:block ${
+                className={`p-1.5 sm:p-2 transition-colors ${
                   pathname === "/account" || pathname === "/login"
                     ? "text-gold"
                     : "hover:text-gold"
                 }`}
                 aria-label="Account"
               >
-                <User size={20} />
+                <User size={18} className="sm:w-5 sm:h-5" />
               </Link>
 
+              {/* Cart — Mobile + Desktop */}
               <Link
                 href="/cart"
-                className={`relative p-2 transition-colors ${
+                className={`relative p-1.5 sm:p-2 transition-colors ${
                   pathname === "/cart" ? "text-gold" : "hover:text-gold"
                 }`}
                 aria-label="Cart"
               >
-                <ShoppingBag size={20} />
+                <ShoppingBag size={18} className="sm:w-5 sm:h-5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 bg-gold text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 bg-gold text-white text-[9px] sm:text-[10px] font-bold rounded-full min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center">
                     {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
