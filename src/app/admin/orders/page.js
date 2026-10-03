@@ -6,29 +6,27 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import {
   Search,
-  Filter,
   Eye,
   Package,
   Truck,
   CheckCircle,
   Clock,
-  XCircle,
+  Trash2,
   Loader2,
-  Download,
   TrendingUp,
-  DollarSign,
   ShoppingBag,
+  AlertCircle,
 } from "lucide-react";
 import { formatPrice, formatDate } from "@/lib/utils";
 
 const STATUS_TABS = [
-  { id: "all", label: "All Orders", color: "text-charcoal" },
-  { id: "pending", label: "Pending", color: "text-warning" },
-  { id: "confirmed", label: "Confirmed", color: "text-info" },
-  { id: "processing", label: "Processing", color: "text-info" },
-  { id: "shipped", label: "Shipped", color: "text-gold" },
-  { id: "delivered", label: "Delivered", color: "text-success" },
-  { id: "cancelled", label: "Cancelled", color: "text-error" },
+  { id: "all", label: "All Orders" },
+  { id: "pending", label: "Pending" },
+  { id: "confirmed", label: "Confirmed" },
+  { id: "processing", label: "Processing" },
+  { id: "shipped", label: "Shipped" },
+  { id: "delivered", label: "Delivered" },
+  { id: "cancelled", label: "Cancelled" },
 ];
 
 const STATUS_COLORS = {
@@ -46,6 +44,8 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
+  const [deleting, setDeleting] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -63,12 +63,27 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleDelete = async (id, orderNumber) => {
+    if (!confirm(`Delete order ${orderNumber}?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeleting(id);
+      const { data } = await axios.delete(`/api/admin/orders/${id}`);
+      toast.success(data.message || "Order deleted");
+      setOrders(orders.filter((o) => o._id !== id));
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   // Filter
   const filtered = orders.filter((order) => {
-    // Tab filter
     if (tab !== "all" && order.orderStatus !== tab) return false;
 
-    // Search filter
     if (search.trim()) {
       const s = search.toLowerCase();
       return (
@@ -86,10 +101,9 @@ export default function AdminOrdersPage() {
   const stats = {
     total: orders.length,
     pending: orders.filter((o) => o.orderStatus === "pending").length,
-    processing: orders.filter(
-      (o) => ["confirmed", "processing", "shipped"].includes(o.orderStatus)
+    processing: orders.filter((o) =>
+      ["confirmed", "processing", "shipped"].includes(o.orderStatus)
     ).length,
-    delivered: orders.filter((o) => o.orderStatus === "delivered").length,
     revenue: orders
       .filter((o) => o.orderStatus !== "cancelled")
       .reduce((sum, o) => sum + (o.total || 0), 0),
@@ -106,7 +120,7 @@ export default function AdminOrdersPage() {
           Orders
         </h1>
         <p className="text-sm text-text-muted mt-2">
-          Track and manage all customer orders
+          Track, manage, and delete customer orders
         </p>
       </div>
 
@@ -138,8 +152,8 @@ export default function AdminOrdersPage() {
         />
       </div>
 
-      {/* Search + Filter */}
-      <div className="bg-white border border-border p-4 mb-6">
+      {/* Search */}
+      <div className="bg-white border border-border p-4 mb-6 rounded-2xl">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search
@@ -151,12 +165,12 @@ export default function AdminOrdersPage() {
               placeholder="Search order number, customer, phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-border focus:border-gold outline-none text-sm"
+              className="w-full pl-10 pr-4 py-2.5 border border-border focus:border-gold outline-none text-sm rounded-full"
             />
           </div>
           <button
             onClick={fetchOrders}
-            className="btn-outline text-xs py-2.5 px-4 flex items-center gap-2 whitespace-nowrap"
+            className="btn-outline text-xs py-2.5 px-4 flex items-center gap-2 whitespace-nowrap rounded-full"
           >
             <Loader2 size={14} className={loading ? "animate-spin" : ""} />
             Refresh
@@ -165,12 +179,12 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border border-border p-1.5 mb-6 flex items-center gap-1 overflow-x-auto">
+      <div className="bg-white border border-border p-1.5 mb-6 flex items-center gap-1 overflow-x-auto rounded-2xl">
         {STATUS_TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-xs uppercase tracking-widest whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 text-xs uppercase tracking-widest whitespace-nowrap transition-colors rounded-full ${
               tab === t.id
                 ? "bg-charcoal text-white"
                 : "text-text-secondary hover:text-charcoal"
@@ -187,11 +201,11 @@ export default function AdminOrdersPage() {
 
       {/* Orders List */}
       {loading ? (
-        <div className="bg-white border border-border p-12 text-center">
+        <div className="bg-white border border-border p-12 text-center rounded-2xl">
           <Loader2 size={32} className="animate-spin text-gold mx-auto" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white border border-border p-12 text-center">
+        <div className="bg-white border border-border p-12 text-center rounded-2xl">
           <Package size={48} className="text-border mx-auto mb-4" />
           <p className="text-sm text-text-muted">
             {search ? "No matching orders" : "No orders found"}
@@ -202,11 +216,11 @@ export default function AdminOrdersPage() {
           {filtered.map((order) => (
             <div
               key={order._id}
-              className="bg-white border border-border hover:border-gold/40 transition-colors"
+              className="bg-white border border-border hover:border-gold/40 transition-colors rounded-2xl"
             >
               <div className="p-5 flex flex-col md:flex-row md:items-center gap-4">
                 {/* Order Info */}
-                <div className="md:w-48 shrink-0">
+                <div className="md:w-44 shrink-0">
                   <p className="text-[10px] uppercase tracking-widest text-text-muted mb-1">
                     Order
                   </p>
@@ -232,7 +246,7 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* Items */}
-                <div className="md:w-24 shrink-0">
+                <div className="md:w-20 shrink-0">
                   <p className="text-[10px] uppercase tracking-widest text-text-muted mb-1">
                     Items
                   </p>
@@ -242,7 +256,7 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* Total */}
-                <div className="md:w-32 shrink-0">
+                <div className="md:w-28 shrink-0">
                   <p className="text-[10px] uppercase tracking-widest text-text-muted mb-1">
                     Total
                   </p>
@@ -254,7 +268,7 @@ export default function AdminOrdersPage() {
                 {/* Status */}
                 <div className="md:w-32 shrink-0">
                   <span
-                    className={`inline-block text-[10px] uppercase tracking-widest px-2.5 py-1 border ${
+                    className={`inline-block text-[10px] uppercase tracking-widest px-2.5 py-1 border rounded-full ${
                       STATUS_COLORS[order.orderStatus]
                     }`}
                   >
@@ -263,13 +277,26 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="md:w-auto shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <Link
                     href={`/admin/orders/${order._id}`}
-                    className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 whitespace-nowrap"
+                    className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 whitespace-nowrap rounded-full"
                   >
                     <Eye size={14} /> Manage
                   </Link>
+
+                  <button
+                    onClick={() => handleDelete(order._id, order.orderNumber)}
+                    disabled={deleting === order._id}
+                    className="p-2.5 border border-error/30 text-error hover:bg-error hover:text-white transition-colors rounded-full disabled:opacity-50"
+                    title="Delete Order"
+                  >
+                    {deleting === order._id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -282,7 +309,7 @@ export default function AdminOrdersPage() {
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="bg-white border border-border p-5">
+    <div className="bg-white border border-border p-5 rounded-2xl">
       <Icon size={20} className={`${color} mb-3`} />
       <p className="font-serif text-2xl text-charcoal mb-1 truncate">{value}</p>
       <p className="text-[10px] uppercase tracking-widest text-text-muted">
