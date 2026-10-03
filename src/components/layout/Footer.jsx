@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -62,7 +62,7 @@ export default function Footer() {
       )}`
     : null;
 
-  // Social links array
+  // Social links (WhatsApp included)
   const socialLinks = [
     { name: "Facebook", icon: FacebookIcon, url: social.facebook },
     { name: "Instagram", icon: InstagramIcon, url: social.instagram },
@@ -70,6 +70,7 @@ export default function Footer() {
     { name: "TikTok", icon: TikTokIcon, url: social.tiktok },
     { name: "Twitter", icon: TwitterIcon, url: social.twitter },
     { name: "LinkedIn", icon: LinkedInIcon, url: social.linkedin },
+    { name: "WhatsApp", icon: WhatsAppIcon, url: whatsappUrl },
   ].filter((s) => s.url);
 
   return (
@@ -79,9 +80,12 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="font-serif text-2xl mb-2">Join the THOBEIAN Circle</h3>
+              <h3 className="font-serif text-2xl mb-2">
+                Join the THOBEIAN Circle
+              </h3>
               <p className="text-white/60 text-sm">
-                Be the first to know about new collections and exclusive offers.
+                Be the first to know about new collections and exclusive
+                offers.
               </p>
             </div>
             <NewsletterForm />
@@ -105,7 +109,7 @@ export default function Footer() {
             </p>
 
             {/* Social Icons */}
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2">
               {socialLinks.map((socialItem) => {
                 const Icon = socialItem.icon;
                 return (
@@ -123,71 +127,136 @@ export default function Footer() {
                 );
               })}
             </div>
-
-            {/* WhatsApp CTA Button */}
-            {whatsappUrl && (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-[#20b858] text-white text-xs uppercase tracking-widest font-medium transition-all duration-200 rounded-sm w-full justify-center"
-              >
-                <WhatsAppIcon size={14} />
-                Chat on WhatsApp
-              </a>
-            )}
           </div>
 
           {/* Shop */}
           <div>
-            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">Shop</h4>
+            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">
+              Shop
+            </h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li><Link href="/" className="hover:text-gold transition-colors">Home</Link></li>
-              <li><Link href="/shop" className="hover:text-gold transition-colors">All Products</Link></li>
-              <li><Link href="/thobe" className="hover:text-gold transition-colors">Thobe</Link></li>
-              <li><Link href="/panjabi" className="hover:text-gold transition-colors">Panjabi</Link></li>
-              <li><Link href="/fabrics" className="hover:text-gold transition-colors">Fabrics</Link></li>
-              <li><Link href="/collections" className="hover:text-gold transition-colors">Collections</Link></li>
-              <li><Link href="/custom-thobe" className="hover:text-gold transition-colors">Custom Thobe</Link></li>
+              <li>
+                <Link href="/" className="hover:text-gold transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link href="/shop" className="hover:text-gold transition-colors">
+                  All Products
+                </Link>
+              </li>
+              <li>
+                <Link href="/thobe" className="hover:text-gold transition-colors">
+                  Thobe
+                </Link>
+              </li>
+              <li>
+                <Link href="/panjabi" className="hover:text-gold transition-colors">
+                  Panjabi
+                </Link>
+              </li>
+              <li>
+                <Link href="/fabrics" className="hover:text-gold transition-colors">
+                  Fabrics
+                </Link>
+              </li>
+              <li>
+                <Link href="/collections" className="hover:text-gold transition-colors">
+                  Collections
+                </Link>
+              </li>
+              <li>
+                <Link href="/custom-thobe" className="hover:text-gold transition-colors">
+                  Custom Thobe
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Customer Care */}
           <div>
-            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">Customer Care</h4>
+            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">
+              Customer Care
+            </h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li><Link href="/contact" className="hover:text-gold transition-colors">Contact</Link></li>
-              <li><Link href="/shipping" className="hover:text-gold transition-colors">Shipping</Link></li>
-              <li><Link href="/returns" className="hover:text-gold transition-colors">Returns</Link></li>
-              <li><Link href="/size-guide" className="hover:text-gold transition-colors">Size Guide</Link></li>
-              <li><Link href="/faq" className="hover:text-gold transition-colors">FAQ</Link></li>
+              <li>
+                <Link href="/contact" className="hover:text-gold transition-colors">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link href="/shipping" className="hover:text-gold transition-colors">
+                  Shipping
+                </Link>
+              </li>
+              <li>
+                <Link href="/returns" className="hover:text-gold transition-colors">
+                  Returns
+                </Link>
+              </li>
+              <li>
+                <Link href="/size-guide" className="hover:text-gold transition-colors">
+                  Size Guide
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-gold transition-colors">
+                  FAQ
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Company */}
           <div>
-            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">Company</h4>
+            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">
+              Company
+            </h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li><Link href="/about" className="hover:text-gold transition-colors">About</Link></li>
-              <li><Link href="/privacy" className="hover:text-gold transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="hover:text-gold transition-colors">Terms</Link></li>
-              <li><Link href="/refund" className="hover:text-gold transition-colors">Refund Policy</Link></li>
+              <li>
+                <Link href="/about" className="hover:text-gold transition-colors">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-gold transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-gold transition-colors">
+                  Terms
+                </Link>
+              </li>
+              <li>
+                <Link href="/refund" className="hover:text-gold transition-colors">
+                  Refund Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">Contact</h4>
+            <h4 className="text-xs uppercase tracking-widest text-gold mb-4">
+              Contact
+            </h4>
             <ul className="space-y-3 text-sm text-white/70">
               <li className="flex items-start gap-2">
                 <Mail size={14} className="mt-0.5 shrink-0" />
-                <a href={`mailto:${contact.email}`} className="hover:text-gold transition-colors break-all">
+                <a
+                  href={`mailto:${contact.email}`}
+                  className="hover:text-gold transition-colors break-all"
+                >
                   {contact.email}
                 </a>
               </li>
               <li className="flex items-start gap-2">
                 <Phone size={14} className="mt-0.5 shrink-0" />
-                <a href={`tel:${contact.phone}`} className="hover:text-gold transition-colors">
+                <a
+                  href={`tel:${contact.phone}`}
+                  className="hover:text-gold transition-colors"
+                >
                   {contact.phone}
                 </a>
               </li>
@@ -196,19 +265,6 @@ export default function Footer() {
                 <span>{contact.address}</span>
               </li>
             </ul>
-
-            {/* Quick WhatsApp */}
-            {whatsappUrl && (
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-2 text-xs text-gold hover:text-gold-dark transition-colors"
-              >
-                <MessageCircle size={12} />
-                Message us on WhatsApp
-              </a>
-            )}
           </div>
         </div>
       </div>
