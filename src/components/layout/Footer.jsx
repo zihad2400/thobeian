@@ -25,10 +25,10 @@ const DEFAULT_SOCIAL = {
 };
 
 const DEFAULT_CONTACT = {
-  email: "hello@thobeian.com",
-  phone: "+880 1XXX-XXXXXX",
-  whatsapp: "8801XXXXXXXXX",
-  address: "Dhaka, Bangladesh",
+  email: "thobeianofficial@gmail.com",
+  phone: "+880 1350-888080",
+  whatsapp: "8801350888080",
+  address: "West Agargon, Sher-e-Bangla Nagar, Dhaka-1207, Bangladesh",
 };
 
 export default function Footer() {
@@ -54,7 +54,6 @@ export default function Footer() {
     }
   };
 
-  // Clean WhatsApp number
   const cleanWhatsApp = (contact.whatsapp || "").replace(/[^0-9]/g, "");
   const whatsappUrl = cleanWhatsApp
     ? `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(
@@ -62,7 +61,6 @@ export default function Footer() {
       )}`
     : null;
 
-  // Social links (WhatsApp included)
   const socialLinks = [
     { name: "Facebook", icon: FacebookIcon, url: social.facebook },
     { name: "Instagram", icon: InstagramIcon, url: social.instagram },
@@ -108,7 +106,6 @@ export default function Footer() {
               Premium Islamic fashion. Sunnah in Style.
             </p>
 
-            {/* Social Icons */}
             <div className="flex flex-wrap gap-2">
               {socialLinks.map((socialItem) => {
                 const Icon = socialItem.icon;
@@ -135,41 +132,13 @@ export default function Footer() {
               Shop
             </h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li>
-                <Link href="/" className="hover:text-gold transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/shop" className="hover:text-gold transition-colors">
-                  All Products
-                </Link>
-              </li>
-              <li>
-                <Link href="/thobe" className="hover:text-gold transition-colors">
-                  Thobe
-                </Link>
-              </li>
-              <li>
-                <Link href="/panjabi" className="hover:text-gold transition-colors">
-                  Panjabi
-                </Link>
-              </li>
-              <li>
-                <Link href="/fabrics" className="hover:text-gold transition-colors">
-                  Fabrics
-                </Link>
-              </li>
-              <li>
-                <Link href="/collections" className="hover:text-gold transition-colors">
-                  Collections
-                </Link>
-              </li>
-              <li>
-                <Link href="/custom-thobe" className="hover:text-gold transition-colors">
-                  Custom Thobe
-                </Link>
-              </li>
+              <li><Link href="/" className="hover:text-gold transition-colors">Home</Link></li>
+              <li><Link href="/shop" className="hover:text-gold transition-colors">All Products</Link></li>
+              <li><Link href="/thobe" className="hover:text-gold transition-colors">Thobe</Link></li>
+              <li><Link href="/panjabi" className="hover:text-gold transition-colors">Panjabi</Link></li>
+              <li><Link href="/fabrics" className="hover:text-gold transition-colors">Fabrics</Link></li>
+              <li><Link href="/collections" className="hover:text-gold transition-colors">Collections</Link></li>
+              <li><Link href="/custom-thobe" className="hover:text-gold transition-colors">Custom Thobe</Link></li>
             </ul>
           </div>
 
@@ -179,31 +148,11 @@ export default function Footer() {
               Customer Care
             </h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li>
-                <Link href="/contact" className="hover:text-gold transition-colors">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/shipping" className="hover:text-gold transition-colors">
-                  Shipping
-                </Link>
-              </li>
-              <li>
-                <Link href="/returns" className="hover:text-gold transition-colors">
-                  Returns
-                </Link>
-              </li>
-              <li>
-                <Link href="/size-guide" className="hover:text-gold transition-colors">
-                  Size Guide
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="hover:text-gold transition-colors">
-                  FAQ
-                </Link>
-              </li>
+              <li><Link href="/contact" className="hover:text-gold transition-colors">Contact</Link></li>
+              <li><Link href="/shipping" className="hover:text-gold transition-colors">Shipping</Link></li>
+              <li><Link href="/returns" className="hover:text-gold transition-colors">Returns</Link></li>
+              <li><Link href="/size-guide" className="hover:text-gold transition-colors">Size Guide</Link></li>
+              <li><Link href="/faq" className="hover:text-gold transition-colors">FAQ</Link></li>
             </ul>
           </div>
 
@@ -213,26 +162,10 @@ export default function Footer() {
               Company
             </h4>
             <ul className="space-y-2 text-sm text-white/70">
-              <li>
-                <Link href="/about" className="hover:text-gold transition-colors">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="hover:text-gold transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="hover:text-gold transition-colors">
-                  Terms
-                </Link>
-              </li>
-              <li>
-                <Link href="/refund" className="hover:text-gold transition-colors">
-                  Refund Policy
-                </Link>
-              </li>
+              <li><Link href="/about" className="hover:text-gold transition-colors">About</Link></li>
+              <li><Link href="/privacy" className="hover:text-gold transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-gold transition-colors">Terms</Link></li>
+              <li><Link href="/refund" className="hover:text-gold transition-colors">Refund Policy</Link></li>
             </ul>
           </div>
 

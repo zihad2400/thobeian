@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Clock, MessageCircle } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 
 export const metadata = {
   title: "Contact Us",
@@ -6,14 +6,24 @@ export const metadata = {
 };
 
 export default function ContactPage() {
+  const contactInfo = {
+    email: "thobeianofficial@gmail.com",
+    phone: "+880 1350-888080",
+    whatsapp: "8801350888080",
+    address: "West Agargon, Sher-e-Bangla Nagar, Dhaka-1207, Bangladesh",
+  };
+
   return (
     <div className="bg-white">
       <div className="bg-background-luxury border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
           <p className="heading-sub">Get In Touch</p>
-          <h1 className="font-serif text-4xl md:text-5xl text-charcoal mb-4">Contact Us</h1>
+          <h1 className="font-serif text-4xl md:text-5xl text-charcoal mb-4">
+            Contact Us
+          </h1>
           <p className="text-text-secondary max-w-2xl mx-auto">
-            Have a question? We'd love to hear from you. Our team is ready to help.
+            Have a question? We'd love to hear from you. Our team is ready to
+            help.
           </p>
           <div className="divider-gold mt-8" />
         </div>
@@ -21,35 +31,80 @@ export default function ContactPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid md:grid-cols-3 gap-6 mb-12">
-          {[
-            { icon: Phone, title: "Call Us", lines: ["+880 1XXX-XXXXXX", "Sat - Thu, 10AM - 8PM"] },
-            { icon: Mail, title: "Email Us", lines: ["hello@thobeian.com", "support@thobeian.com"] },
-            { icon: MapPin, title: "Visit Us", lines: ["Dhanmondi, Dhaka", "Bangladesh"] },
-          ].map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <div key={i} className="bg-white border border-border p-8 text-center hover:border-gold/40 transition-colors">
-                <div className="inline-flex items-center justify-center w-14 h-14 bg-gold/10 text-gold mb-5">
-                  <Icon size={24} />
-                </div>
-                <h3 className="font-serif text-xl text-charcoal mb-3">{item.title}</h3>
-                {item.lines.map((line, j) => (
-                  <p key={j} className="text-sm text-text-secondary">{line}</p>
-                ))}
-              </div>
-            );
-          })}
+          {/* Call */}
+          <div className="bg-white border border-border p-8 text-center hover:border-gold/40 hover:shadow-lg transition-all duration-300 rounded-2xl">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-gold/10 text-gold mb-5 rounded-full">
+              <Phone size={24} />
+            </div>
+            <h3 className="font-serif text-xl text-charcoal mb-3">
+              Call Us
+            </h3>
+            <a
+              href={`tel:${contactInfo.phone}`}
+              className="text-sm text-text-secondary hover:text-gold transition-colors block mb-2"
+            >
+              {contactInfo.phone}
+            </a>
+            <p className="text-xs text-text-muted">Sat - Thu, 10AM - 8PM</p>
+          </div>
+
+          {/* Email */}
+          <div className="bg-white border border-border p-8 text-center hover:border-gold/40 hover:shadow-lg transition-all duration-300 rounded-2xl">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-gold/10 text-gold mb-5 rounded-full">
+              <Mail size={24} />
+            </div>
+            <h3 className="font-serif text-xl text-charcoal mb-3">
+              Email Us
+            </h3>
+            <a
+              href={`mailto:${contactInfo.email}`}
+              className="text-sm text-text-secondary hover:text-gold transition-colors break-all"
+            >
+              {contactInfo.email}
+            </a>
+            <p className="text-xs text-text-muted mt-2">24/7 Support</p>
+          </div>
+
+          {/* Location */}
+          <div className="bg-white border border-border p-8 text-center hover:border-gold/40 hover:shadow-lg transition-all duration-300 rounded-2xl">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-gold/10 text-gold mb-5 rounded-full">
+              <MapPin size={24} />
+            </div>
+            <h3 className="font-serif text-xl text-charcoal mb-3">
+              Visit Us
+            </h3>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              {contactInfo.address}
+            </p>
+          </div>
         </div>
 
-        <div className="bg-background-luxury border border-border p-8 md:p-12 max-w-3xl mx-auto text-center">
+        {/* WhatsApp CTA */}
+        <div className="bg-background-luxury border border-border p-8 md:p-12 max-w-3xl mx-auto text-center rounded-2xl">
           <MessageCircle size={32} className="text-gold mx-auto mb-4" />
-          <h2 className="font-serif text-2xl text-charcoal mb-3">Send Us a Message</h2>
+          <h2 className="font-serif text-2xl text-charcoal mb-3">
+            Message Us on WhatsApp
+          </h2>
           <p className="text-sm text-text-secondary mb-6">
-            For fastest response, message us on WhatsApp or email us directly.
+            For fastest response, message us on WhatsApp
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <a href="https://wa.me/8801XXXXXXXXX" className="btn-primary text-xs py-3 px-6">WhatsApp Us</a>
-            <a href="mailto:hello@thobeian.com" className="btn-outline text-xs py-3 px-6">Email Us</a>
+            <a
+              href={`https://wa.me/${contactInfo.whatsapp}?text=${encodeURIComponent("Hello THOBEIAN! I need help.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] hover:bg-[#20b858] text-white text-sm uppercase tracking-widest font-medium transition-colors rounded-full"
+            >
+              <MessageCircle size={16} />
+              Chat on WhatsApp
+            </a>
+            <a
+              href={`mailto:${contactInfo.email}`}
+              className="inline-flex items-center gap-2 px-6 py-3 border border-charcoal text-charcoal hover:bg-charcoal hover:text-white text-sm uppercase tracking-widest font-medium transition-colors rounded-full"
+            >
+              <Mail size={16} />
+              Send Email
+            </a>
           </div>
         </div>
       </div>

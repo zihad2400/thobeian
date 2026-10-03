@@ -40,18 +40,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="icon" href="/images/logo/thobeian-favicon.png" />
-        <link
-          rel="icon"
-          href="/favicon/favicon-32x32.png"
-          type="image/png"
-          sizes="32x32"
-        />
-        <link
-          rel="icon"
-          href="/favicon/favicon-16x16.png"
-          type="image/png"
-          sizes="16x16"
-        />
+        <link rel="icon" href="/favicon/favicon-32x32.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon/favicon-16x16.png" type="image/png" sizes="16x16" />
         <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
         <meta name="theme-color" content="#1F2A44" />
       </head>
@@ -64,7 +54,7 @@ export default function RootLayout({ children }) {
         <main className="flex-1">{children}</main>
         <Footer />
         <WhatsAppButton
-          phoneNumber="8801XXXXXXXXX"
+          phoneNumber="8801350888080"
           message="Hello THOBEIAN! I need help with my order."
           position="bottom-right"
         />
