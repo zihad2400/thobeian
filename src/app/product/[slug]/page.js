@@ -33,6 +33,7 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
+  const [selectedVariantId, setSelectedVariantId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
 
@@ -46,9 +47,6 @@ export default function ProductDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   const addToCart = useCartStore((s) => s.addToCart);
-  useEffect(() => {
-    fetchProduct();
-  }, [slug]);
 
   const fetchProduct = async () => {
     try {
@@ -80,15 +78,62 @@ export default function ProductDetailPage() {
     }
   };
 
+  useEffect(() => {
+    let active = true;
+
+    const loadProduct = async () => {
+      if (!active) return;
+      await fetchProduct();
+    };
+
+    loadProduct();
+
+    return () => {
+      active = false;
+    };
+  }, [slug]);
+
+  const getSelectedVariant = () => {
+    if (!product?.variants?.length) {
+      return null;
+    }
+
+    if (selectedVariantId) {
+      return (
+        product.variants.find(
+          (variant) =>
+            variant._id?.toString() === selectedVariantId.toString()
+        ) || null
+      );
+    }
+
+    return (
+      product.variants.find(
+        (variant) =>
+          variant.size === selectedSize &&
+          (!selectedColor || variant.color === selectedColor)
+      ) || null
+    );
+  };
+
   const handleAddToCart = async () => {
     if (!selectedSize) {
       toast.error("Please select a size");
       return;
     }
 
+    const selectedVariant = getSelectedVariant();
+
+    if (product?.variants?.length && !selectedVariant) {
+      toast.error("Selected variant is unavailable");
+      return;
+    }
+
     await addToCart(product, {
+      variantId: selectedVariant?._id,
       size: selectedSize,
       color: selectedColor,
+      fabric: selectedVariant?.fabric || "",
       quantity,
     });
   };
@@ -99,9 +144,18 @@ export default function ProductDetailPage() {
       return;
     }
 
+    const selectedVariant = getSelectedVariant();
+
+    if (product?.variants?.length && !selectedVariant) {
+      toast.error("Selected variant is unavailable");
+      return;
+    }
+
     const success = await addToCart(product, {
+      variantId: selectedVariant?._id,
       size: selectedSize,
       color: selectedColor,
+      fabric: selectedVariant?.fabric || "",
       quantity,
     });
 

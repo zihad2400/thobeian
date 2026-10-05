@@ -1,5 +1,6 @@
 import connectDB from "@/lib/mongodb";
 import Cart from "@/models/Cart";
+import Product from "@/models/Product";
 import { getCurrentUser } from "@/lib/auth";
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 import { cookies } from "next/headers";
@@ -29,20 +30,26 @@ async function getOrCreateSessionId() {
   return sessionId;
 }
 
+async function findCart(user) {
+  if (user) {
+    return Cart.findOne({ user: user._id });
+  }
+
+  const sessionId = await getSessionId();
+
+  if (!sessionId) {
+    return null;
+  }
+
+  return Cart.findOne({ sessionId });
+}
+
 export async function GET() {
   try {
     await connectDB();
 
     const user = await getCurrentUser();
-    const sessionId = await getSessionId();
-
-    let cart;
-
-    if (user) {
-      cart = await Cart.findOne({ user: user._id });
-    } else if (sessionId) {
-      cart = await Cart.findOne({ sessionId });
-    }
+    const cart = await findCart(user);
 
     return successResponse({
       items: cart?.items || [],
@@ -62,35 +69,96 @@ export async function POST(req) {
 
     const {
       productId,
+      variantId,
       size,
       color,
+      fabric,
       quantity = 1,
-      price,
-      name,
-      image,
     } = body;
 
-    if (!productId || !size) {
-      return errorResponse("Product and size required", 400);
+    if (!productId) {
+      return errorResponse("Product is required", 400);
     }
 
-    let cart;
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return errorResponse("Invalid quantity", 400);
+    }
 
-    if (user) {
-      cart = await Cart.findOne({ user: user._id });
+    const product = await Product.findOne({
+      _id: productId,
+      status: "published",
+    }).lean();
 
-      if (!cart) {
+    if (!product) {
+      return errorResponse("Product not found or unavailable", 404);
+    }
+
+    let variant = null;
+
+    if (variantId) {
+      variant = product.variants?.find(
+        (item) => item._id?.toString() === variantId.toString()
+      );
+
+      if (!variant) {
+        return errorResponse("Selected variant not found", 400);
+      }
+    } else if (product.variants?.length) {
+      variant = product.variants.find(
+        (item) =>
+          (size ? item.size === size : true) &&
+          (color ? item.color === color : true) &&
+          (fabric ? item.fabric === fabric : true)
+      );
+
+      if (!variant) {
+        return errorResponse(
+          "Selected product variant is unavailable",
+          400
+        );
+      }
+    }
+
+    const resolvedSize = variant?.size || size || "";
+    const resolvedColor = variant?.color || color || "";
+    const resolvedFabric = variant?.fabric || fabric || "";
+
+    const resolvedPrice =
+      typeof variant?.price === "number"
+        ? variant.price
+        : product.price;
+
+    const resolvedImage =
+      variant?.image ||
+      product.images?.[0] ||
+      product.hoverImage ||
+      "";
+
+    const resolvedSku =
+      variant?.sku ||
+      product.sku ||
+      "";
+
+    const availableStock =
+      typeof variant?.stock === "number"
+        ? variant.stock
+        : product.totalStock;
+
+    if (availableStock < 1) {
+      return errorResponse("This product is out of stock", 400);
+    }
+
+    let cart = await findCart(user);
+
+    if (!cart) {
+      if (user) {
         cart = await Cart.create({
           user: user._id,
           items: [],
         });
-      }
-    } else {
-      const sessionId = await getOrCreateSessionId();
+      } else {
+        const sessionId = await getOrCreateSessionId();
 
-      cart = await Cart.findOne({ sessionId });
-
-      if (!cart) {
         cart = await Cart.create({
           sessionId,
           items: [],
@@ -100,24 +168,52 @@ export async function POST(req) {
 
     const existingIdx = cart.items.findIndex(
       (item) =>
-        item.product.toString() === productId &&
-        item.size === size &&
-        item.color === color
+        item.product.toString() === productId.toString() &&
+        (item.variantId || "") === (variant?._id?.toString() || "") &&
+        item.size === resolvedSize &&
+        item.color === resolvedColor &&
+        item.fabric === resolvedFabric
     );
+
+    const existingQuantity =
+      existingIdx >= 0 ? cart.items[existingIdx].quantity : 0;
+
+    if (existingQuantity + quantity > availableStock) {
+      return errorResponse(
+        `Only ${availableStock} item${
+          availableStock === 1 ? "" : "s"
+        } available`,
+        400
+      );
+    }
 
     if (existingIdx >= 0) {
       cart.items[existingIdx].quantity += quantity;
+
+      // Refresh trusted product information.
+      cart.items[existingIdx].name = product.name;
+      cart.items[existingIdx].price = resolvedPrice;
+      cart.items[existingIdx].image = resolvedImage;
+      cart.items[existingIdx].variantId =
+        variant?._id?.toString() || "";
+      cart.items[existingIdx].size = resolvedSize;
+      cart.items[existingIdx].color = resolvedColor;
+      cart.items[existingIdx].fabric = resolvedFabric;
     } else {
       cart.items.push({
-        product: productId,
-        size,
-        color,
+        product: product._id,
+        variantId: variant?._id?.toString() || "",
+        name: product.name,
+        image: resolvedImage,
+        size: resolvedSize,
+        color: resolvedColor,
+        fabric: resolvedFabric,
+        price: resolvedPrice,
         quantity,
-        price,
-        name,
-        image,
       });
     }
+
+    cart.updatedAt = new Date();
 
     await cart.save();
 
@@ -143,12 +239,22 @@ export async function DELETE() {
     if (user) {
       await Cart.findOneAndUpdate(
         { user: user._id },
-        { items: [] }
+        {
+          $set: {
+            items: [],
+            updatedAt: new Date(),
+          },
+        }
       );
     } else if (sessionId) {
       await Cart.findOneAndUpdate(
         { sessionId },
-        { items: [] }
+        {
+          $set: {
+            items: [],
+            updatedAt: new Date(),
+          },
+        }
       );
     }
 

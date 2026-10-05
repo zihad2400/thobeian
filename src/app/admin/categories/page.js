@@ -26,23 +26,58 @@ export default function AdminCategoriesPage() {
     name: "",
     slug: "",
     description: "",
+    parent: "",
     type: "thobe",
+    sortOrder: 0,
     isActive: true,
+    showInMenu: true,
+    showInMegaMenu: false,
+    seo: {
+      title: "",
+      description: "",
+      keywords: [],
+    },
   });
 
   useEffect(() => {
-    fetchCategories();
+    let active = true;
+
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+
+        const { data } = await axios.get("/api/admin/categories");
+
+        if (active) {
+          setCategories(data.data.categories || []);
+        }
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+
+        if (active) {
+          toast.error("Failed to load categories");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const fetchCategories = async () => {
     try {
-      setLoading(true);
       const { data } = await axios.get("/api/admin/categories");
       setCategories(data.data.categories || []);
     } catch (error) {
-      toast.error("Failed to load");
-    } finally {
-      setLoading(false);
+      console.error("Failed to refresh categories:", error);
+      toast.error("Failed to refresh categories");
     }
   };
 
@@ -80,7 +115,9 @@ export default function AdminCategoriesPage() {
       toast.success("Category deleted");
       fetchCategories();
     } catch (error) {
-      toast.error("Delete failed");
+      toast.error(
+        error.response?.data?.message || "Delete failed"
+      );
     }
   };
 
@@ -89,15 +126,41 @@ export default function AdminCategoriesPage() {
       name: cat.name || "",
       slug: cat.slug || "",
       description: cat.description || "",
+      parent: cat.parent?._id || cat.parent || "",
       type: cat.type || "thobe",
+      sortOrder: Number(cat.sortOrder || 0),
       isActive: cat.isActive !== false,
+      showInMenu: cat.showInMenu !== false,
+      showInMegaMenu: Boolean(cat.showInMegaMenu),
+      seo: {
+        title: cat.seo?.title || "",
+        description: cat.seo?.description || "",
+        keywords: Array.isArray(cat.seo?.keywords)
+          ? cat.seo.keywords
+          : [],
+      },
     });
     setEditingId(cat._id);
     setShowForm(true);
   };
 
   const resetForm = () => {
-    setForm({ name: "", slug: "", description: "", type: "thobe", isActive: true });
+    setForm({
+      name: "",
+      slug: "",
+      description: "",
+      parent: "",
+      type: "thobe",
+      sortOrder: 0,
+      isActive: true,
+      showInMenu: true,
+      showInMegaMenu: false,
+      seo: {
+        title: "",
+        description: "",
+        keywords: [],
+      },
+    });
   };
 
   const filtered = categories.filter((c) =>
@@ -175,18 +238,63 @@ export default function AdminCategoriesPage() {
               </label>
               <select
                 value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, type: e.target.value })
+                }
                 className="input-luxury"
               >
                 <option value="thobe">Thobe</option>
+                <option value="jubba">Jubba</option>
                 <option value="panjabi">Panjabi</option>
                 <option value="fabric">Fabric</option>
                 <option value="collection">Collection</option>
                 <option value="other">Other</option>
               </select>
             </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 cursor-pointer">
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest text-text-muted mb-1.5 block">
+                Parent Category
+              </label>
+              <select
+                value={form.parent}
+                onChange={(e) =>
+                  setForm({ ...form, parent: e.target.value })
+                }
+                className="input-luxury"
+              >
+                <option value="">No Parent — Main Category</option>
+                {categories
+                  .filter((cat) => cat._id !== editingId)
+                  .map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.parent ? "↳ " : ""}
+                      {cat.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest text-text-muted mb-1.5 block">
+                Sort Order
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={form.sortOrder}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    sortOrder: Number(e.target.value) || 0,
+                  })
+                }
+                className="input-luxury"
+              />
+            </div>
+
+            <div className="md:col-span-2 grid sm:grid-cols-3 gap-3">
+              <label className="flex items-center gap-3 p-3 border border-border cursor-pointer hover:border-gold transition-colors">
                 <input
                   type="checkbox"
                   checked={form.isActive}
@@ -195,20 +303,166 @@ export default function AdminCategoriesPage() {
                   }
                   className="w-4 h-4 accent-gold"
                 />
-                <span className="text-sm text-charcoal">Active</span>
+                <span>
+                  <span className="block text-sm text-charcoal">
+                    Active
+                  </span>
+                  <span className="block text-[10px] text-text-muted mt-0.5">
+                    Category is available
+                  </span>
+                </span>
+              </label>
+
+              <label className="flex items-center gap-3 p-3 border border-border cursor-pointer hover:border-gold transition-colors">
+                <input
+                  type="checkbox"
+                  checked={form.showInMenu}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      showInMenu: e.target.checked,
+                    })
+                  }
+                  className="w-4 h-4 accent-gold"
+                />
+                <span>
+                  <span className="block text-sm text-charcoal">
+                    Show in Menu
+                  </span>
+                  <span className="block text-[10px] text-text-muted mt-0.5">
+                    Main navigation visibility
+                  </span>
+                </span>
+              </label>
+
+              <label className="flex items-center gap-3 p-3 border border-border cursor-pointer hover:border-gold transition-colors">
+                <input
+                  type="checkbox"
+                  checked={form.showInMegaMenu}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      showInMegaMenu: e.target.checked,
+                    })
+                  }
+                  className="w-4 h-4 accent-gold"
+                />
+                <span>
+                  <span className="block text-sm text-charcoal">
+                    Mega Menu
+                  </span>
+                  <span className="block text-[10px] text-text-muted mt-0.5">
+                    Include in mega menu
+                  </span>
+                </span>
               </label>
             </div>
             <div className="md:col-span-2">
-              <label className="text-[10px] uppercase tracking-widest text-text-muted mb-1.5 block">
-                Description
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={3}
-                className="input-luxury resize-none"
-              />
+            <label className="text-[10px] uppercase tracking-widest text-text-muted mb-1.5 block">
+              Description
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              rows={3}
+              className="input-luxury resize-none"
+              placeholder="Describe this category..."
+            />
+          </div>
+
+          <div className="md:col-span-2 mt-2 pt-5 border-t border-border">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-gold">
+                  Search Engine Optimization
+                </p>
+                <h4 className="font-serif text-base text-charcoal mt-1">
+                  SEO Settings
+                </h4>
+              </div>
             </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-text-muted mb-1.5 block">
+                  SEO Title
+                </label>
+                <input
+                  type="text"
+                  maxLength={70}
+                  value={form.seo.title}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      seo: {
+                        ...form.seo,
+                        title: e.target.value,
+                      },
+                    })
+                  }
+                  className="input-luxury"
+                  placeholder="Category SEO title"
+                />
+                <p className="text-[10px] text-text-muted mt-1 text-right">
+                  {form.seo.title.length}/70
+                </p>
+              </div>
+
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-text-muted mb-1.5 block">
+                  SEO Keywords
+                </label>
+                <input
+                  type="text"
+                  value={form.seo.keywords.join(", ")}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      seo: {
+                        ...form.seo,
+                        keywords: e.target.value
+                          .split(",")
+                          .map((keyword) => keyword.trim())
+                          .filter(Boolean),
+                      },
+                    })
+                  }
+                  className="input-luxury"
+                  placeholder="thobe, premium thobe, islamic clothing"
+                />
+                <p className="text-[10px] text-text-muted mt-1">
+                  Separate keywords with commas
+                </p>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-[10px] uppercase tracking-widest text-text-muted mb-1.5 block">
+                  SEO Description
+                </label>
+                <textarea
+                  maxLength={160}
+                  value={form.seo.description}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      seo: {
+                        ...form.seo,
+                        description: e.target.value,
+                      },
+                    })
+                  }
+                  rows={3}
+                  className="input-luxury resize-none"
+                  placeholder="Search engine description for this category..."
+                />
+                <p className="text-[10px] text-text-muted mt-1 text-right">
+                  {form.seo.description.length}/160
+                </p>
+              </div>
+            </div>
+          </div>
           </div>
 
           <div className="flex gap-3 mt-5 pt-5 border-t border-border">
@@ -256,80 +510,181 @@ export default function AdminCategoriesPage() {
           <p className="text-sm text-text-muted">No categories</p>
         </div>
       ) : (
-        <div className="bg-white border border-border">
-          <table className="w-full">
-            <thead className="bg-background-luxury border-b border-border">
-              <tr>
-                <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
-                  Name
-                </th>
-                <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium hidden md:table-cell">
-                  Slug
-                </th>
-                <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium hidden md:table-cell">
-                  Type
-                </th>
-                <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
-                  Status
-                </th>
-                <th className="text-right p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((cat) => (
-                <tr
-                  key={cat._id}
-                  className="border-b border-border hover:bg-background-luxury"
-                >
-                  <td className="p-4">
-                    <p className="text-sm text-charcoal font-medium">
-                      {cat.name}
-                    </p>
-                    {cat.parent && (
-                      <p className="text-[10px] text-text-muted">
-                        Subcategory
-                      </p>
-                    )}
-                  </td>
-                  <td className="p-4 text-xs text-text-muted font-mono hidden md:table-cell">
-                    {cat.slug}
-                  </td>
-                  <td className="p-4 text-xs text-text-secondary capitalize hidden md:table-cell">
-                    {cat.type}
-                  </td>
-                  <td className="p-4">
-                    <span
-                      className={`text-[10px] uppercase tracking-widest px-2 py-1 border ${
-                        cat.isActive
-                          ? "bg-success/10 text-success border-success/30"
-                          : "bg-border text-text-muted"
+        <div className="bg-white border border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px]">
+              <thead className="bg-background-luxury border-b border-border">
+                <tr>
+                  <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
+                    Category
+                  </th>
+                  <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
+                    Type
+                  </th>
+                  <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
+                    Order
+                  </th>
+                  <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
+                    Visibility
+                  </th>
+                  <th className="text-left p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
+                    Status
+                  </th>
+                  <th className="text-right p-4 text-[10px] uppercase tracking-widest text-text-muted font-medium">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filtered.map((cat) => {
+                  const parentName =
+                    typeof cat.parent === "object"
+                      ? cat.parent?.name
+                      : categories.find(
+                          (parent) => parent._id === cat.parent
+                        )?.name;
+
+                  const isSubcategory = Boolean(cat.parent);
+
+                  return (
+                    <tr
+                      key={cat._id}
+                      className={`border-b border-border last:border-b-0 transition-colors hover:bg-background-luxury ${
+                        isSubcategory ? "bg-background-luxury/30" : ""
                       }`}
                     >
-                      {cat.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleEdit(cat)}
-                        className="p-2 text-text-muted hover:text-gold"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(cat._id)}
-                        className="p-2 text-text-muted hover:text-error"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center border ${
+                              isSubcategory
+                                ? "border-border bg-white"
+                                : "border-gold/30 bg-gold/5"
+                            }`}
+                          >
+                            <FolderTree
+                              size={15}
+                              className={
+                                isSubcategory
+                                  ? "text-text-muted"
+                                  : "text-gold"
+                              }
+                              aria-hidden="true"
+                            />
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              {isSubcategory && (
+                                <span className="text-gold text-xs">
+                                  ↳
+                                </span>
+                              )}
+
+                              <p className="text-sm text-charcoal font-medium truncate">
+                                {cat.name}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] text-text-muted font-mono">
+                                /{cat.slug}
+                              </span>
+
+                              {isSubcategory && parentName && (
+                                <span className="text-[9px] uppercase tracking-wider text-text-muted">
+                                  • {parentName}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-4">
+                        <span className="inline-flex items-center px-2 py-1 border border-border bg-white text-[10px] uppercase tracking-wider text-text-secondary">
+                          {cat.type || "other"}
+                        </span>
+                      </td>
+
+                      <td className="p-4">
+                        <span className="text-xs text-text-secondary tabular-nums">
+                          {Number(cat.sortOrder || 0)}
+                        </span>
+                      </td>
+
+                      <td className="p-4">
+                        <div className="flex flex-wrap gap-1.5">
+                          {cat.showInMenu !== false && (
+                            <span className="text-[9px] uppercase tracking-wider px-2 py-1 border border-gold/20 bg-gold/5 text-gold">
+                              Menu
+                            </span>
+                          )}
+
+                          {cat.showInMegaMenu && (
+                            <span className="text-[9px] uppercase tracking-wider px-2 py-1 border border-border bg-background-luxury text-text-muted">
+                              Mega
+                            </span>
+                          )}
+
+                          {cat.showInMenu === false &&
+                            !cat.showInMegaMenu && (
+                              <span className="text-[9px] uppercase tracking-wider px-2 py-1 border border-border text-text-muted">
+                                Hidden
+                              </span>
+                            )}
+                        </div>
+                      </td>
+
+                      <td className="p-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[9px] uppercase tracking-widest px-2.5 py-1.5 border ${
+                            cat.isActive
+                              ? "bg-success/10 text-success border-success/30"
+                              : "bg-border/50 text-text-muted border-border"
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              cat.isActive
+                                ? "bg-success"
+                                : "bg-text-muted"
+                            }`}
+                          />
+                          {cat.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+
+                      <td className="p-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(cat)}
+                            className="p-2 text-text-muted hover:text-gold hover:bg-gold/5 transition-colors"
+                            title="Edit category"
+                            aria-label={`Edit ${cat.name}`}
+                          >
+                            <Edit size={14} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(cat._id)}
+                            className="p-2 text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete category"
+                            aria-label={`Delete ${cat.name}`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

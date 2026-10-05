@@ -64,6 +64,38 @@ export async function PATCH(req, { params }) {
 
     const changes = [];
 
+    const VALID_ORDER_STATUSES = [
+      "pending",
+      "confirmed",
+      "processing",
+      "shipped",
+      "out_for_delivery",
+      "delivered",
+      "cancelled",
+      "returned",
+    ];
+
+    const VALID_PAYMENT_STATUSES = [
+      "pending",
+      "paid",
+      "failed",
+      "refunded",
+    ];
+
+    if (
+      body.orderStatus !== undefined &&
+      !VALID_ORDER_STATUSES.includes(body.orderStatus)
+    ) {
+      return errorResponse("Invalid order status", 400);
+    }
+
+    if (
+      body.paymentStatus !== undefined &&
+      !VALID_PAYMENT_STATUSES.includes(body.paymentStatus)
+    ) {
+      return errorResponse("Invalid payment status", 400);
+    }
+
     if (
       body.orderStatus &&
       body.orderStatus !== order.orderStatus
@@ -90,18 +122,46 @@ export async function PATCH(req, { params }) {
       order.paymentStatus = body.paymentStatus;
 
       changes.push(`Payment: ${body.paymentStatus}`);
+
+      if (body.paymentStatus === "paid") {
+        order.paymentVerifiedAt = new Date();
+        order.paymentVerifiedBy = user._id;
+
+        if (!Array.isArray(order.statusHistory)) {
+          order.statusHistory = [];
+        }
+
+        order.statusHistory.push({
+          status: order.orderStatus,
+          timestamp: new Date(),
+          note: "Payment verified and marked as paid by admin",
+        });
+      }
+
+      if (body.paymentStatus !== "paid") {
+        order.paymentVerifiedAt = undefined;
+        order.paymentVerifiedBy = undefined;
+      }
     }
 
     if (body.trackingNumber !== undefined) {
-      order.trackingNumber = body.trackingNumber;
+      const tracking =
+        typeof body.trackingNumber === "string"
+          ? body.trackingNumber.trim()
+          : "";
 
-      if (body.trackingNumber) {
-        changes.push(`Tracking: ${body.trackingNumber}`);
+      order.trackingNumber = tracking;
+
+      if (tracking) {
+        changes.push(`Tracking: ${tracking}`);
       }
     }
 
     if (body.notes !== undefined) {
-      order.notes = body.notes;
+      order.notes =
+        typeof body.notes === "string"
+          ? body.notes.trim()
+          : "";
     }
 
     await order.save();

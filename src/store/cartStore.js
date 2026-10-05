@@ -2,6 +2,29 @@ import { create } from "zustand";
 import axios from "axios";
 import toast from "@/lib/toast";
 
+function findProductVariant(product, { variantId, size, color, fabric }) {
+  if (!Array.isArray(product?.variants) || product.variants.length === 0) {
+    return null;
+  }
+
+  if (variantId) {
+    return (
+      product.variants.find(
+        (variant) => variant._id?.toString() === variantId.toString()
+      ) || null
+    );
+  }
+
+  return (
+    product.variants.find(
+      (variant) =>
+        (!size || variant.size === size) &&
+        (!color || variant.color === color) &&
+        (!fabric || variant.fabric === fabric)
+    ) || null
+  );
+}
+
 export const useCartStore = create((set, get) => ({
   items: [],
   loading: false,
@@ -31,17 +54,55 @@ export const useCartStore = create((set, get) => ({
 
   addToCart: async (
     product,
-    { size, color, quantity = 1 } = {}
+    {
+      variantId,
+      size,
+      color,
+      fabric,
+      quantity = 1,
+    } = {}
   ) => {
     const previousItems = get().items;
+
     const defaultSize = size || "M";
     const defaultColor = color || "";
+    const defaultFabric = fabric || "";
+
+    const variant = findProductVariant(product, {
+      variantId,
+      size: defaultSize,
+      color: defaultColor,
+      fabric: defaultFabric,
+    });
+
+    if (product?.variants?.length && !variant) {
+      toast.error("Selected variant is unavailable");
+      return false;
+    }
+
+    const resolvedVariantId = variant?._id?.toString() || "";
+    const resolvedPrice =
+      typeof variant?.price === "number"
+        ? variant.price
+        : product.price;
+
+    const resolvedImage =
+      variant?.image ||
+      product.images?.[0] ||
+      product.image ||
+      "";
+
+    const resolvedSize = variant?.size || defaultSize;
+    const resolvedColor = variant?.color || defaultColor;
+    const resolvedFabric = variant?.fabric || defaultFabric;
 
     const existingIndex = previousItems.findIndex(
       (item) =>
         item.product?.toString() === product._id?.toString() &&
-        item.size === defaultSize &&
-        item.color === defaultColor
+        (item.variantId || "") === resolvedVariantId &&
+        item.size === resolvedSize &&
+        item.color === resolvedColor &&
+        item.fabric === resolvedFabric
     );
 
     let optimisticItems;
@@ -52,6 +113,10 @@ export const useCartStore = create((set, get) => ({
           ? {
               ...item,
               quantity: item.quantity + quantity,
+              price: resolvedPrice,
+              name: product.name,
+              image: resolvedImage,
+              fabric: resolvedFabric,
             }
           : item
       );
@@ -61,38 +126,36 @@ export const useCartStore = create((set, get) => ({
         {
           _id: `optimistic-${Date.now()}`,
           product: product._id,
-          size: defaultSize,
-          color: defaultColor,
+          variantId: resolvedVariantId,
+          size: resolvedSize,
+          color: resolvedColor,
+          fabric: resolvedFabric,
           quantity,
-          price: product.price,
+          price: resolvedPrice,
           name: product.name,
-          image: product.images?.[0] || product.image,
+          image: resolvedImage,
         },
       ];
     }
 
-    // INSTANT UI UPDATE
     set({
       items: optimisticItems,
       initialized: true,
       loading: true,
     });
 
-    // INSTANT SUCCESS FEEDBACK
     toast.success("Added to cart");
 
     try {
       const { data } = await axios.post("/api/cart", {
         productId: product._id,
-        size: defaultSize,
-        color: defaultColor,
+        variantId: resolvedVariantId || undefined,
+        size: resolvedSize,
+        color: resolvedColor,
+        fabric: resolvedFabric,
         quantity,
-        price: product.price,
-        name: product.name,
-        image: product.images?.[0] || product.image,
       });
 
-      // Sync with real server data
       set({
         items: data.data.items || [],
         initialized: true,
@@ -103,7 +166,6 @@ export const useCartStore = create((set, get) => ({
     } catch (error) {
       console.error("Add to cart error:", error);
 
-      // ROLLBACK if server fails
       set({
         items: previousItems,
         loading: false,

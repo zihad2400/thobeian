@@ -1,19 +1,66 @@
 import { NextResponse } from "next/server";
+
 import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
-import Cart from "@/models/Cart";
-import { completePayment, verifyPayment } from "@/lib/nagad";
+
+import {
+  verifyPayment,
+} from "@/lib/nagad";
+
+import {
+  markOrderPaymentSuccess,
+  markOrderPaymentFailed,
+} from "@/lib/orderPayment";
 
 export async function GET(req) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000";
+
+  let orderId = null;
 
   try {
-    const { searchParams } = new URL(req.url);
-    const paymentReferenceId = searchParams.get("payment_ref_id");
-    const status = searchParams.get("status");
-    const orderId = searchParams.get("orderId");
+    const {
+      searchParams,
+    } = new URL(req.url);
 
-    if (status === "cancel") {
+    const paymentReferenceId =
+      searchParams.get(
+        "payment_ref_id"
+      );
+
+    const status =
+      searchParams.get(
+        "status"
+      );
+
+    orderId =
+      searchParams.get(
+        "orderId"
+      );
+
+    /*
+     * Customer cancelled.
+     */
+    if (
+      status === "cancel"
+    ) {
+      await connectDB();
+
+      const order =
+        await Order.findById(
+          orderId
+        );
+
+      if (order) {
+        await markOrderPaymentFailed({
+          order,
+
+          reason:
+            "Nagad payment cancelled by customer. Reserved stock released.",
+        });
+      }
+
       return NextResponse.redirect(
         `${baseUrl}/checkout/failed?reason=cancelled&orderId=${orderId}`
       );
@@ -25,47 +72,77 @@ export async function GET(req) {
       );
     }
 
-    // Verify payment status
-    const verifyResponse = await verifyPayment(paymentReferenceId);
+    /*
+     * Verify payment directly with Nagad.
+     */
+    const verifyResponse =
+      await verifyPayment(
+        paymentReferenceId
+      );
 
-    if (verifyResponse?.status !== "Success") {
+    if (
+      verifyResponse?.status !==
+      "Success"
+    ) {
+      await connectDB();
+
+      const order =
+        await Order.findById(
+          orderId
+        );
+
+      if (order) {
+        await markOrderPaymentFailed({
+          order,
+
+          reason:
+            "Nagad payment verification failed. Reserved stock released.",
+        });
+      }
+
       return NextResponse.redirect(
         `${baseUrl}/checkout/failed?reason=verification_failed&orderId=${orderId}`
       );
     }
 
-    // Update order
     await connectDB();
-    const order = await Order.findById(orderId);
+
+    const order =
+      await Order.findById(
+        orderId
+      );
+
     if (!order) {
       return NextResponse.redirect(
         `${baseUrl}/checkout/failed?reason=order_not_found`
       );
     }
 
-    order.paymentStatus = "paid";
-    order.paymentMethod = "nagad";
-    order.paymentTransactionId =
-      verifyResponse.issuerPaymentRefNo || paymentReferenceId;
-    order.paymentVerifiedAt = new Date();
-    order.orderStatus = "confirmed";
-    order.statusHistory.push({
-      status: "confirmed",
-      timestamp: new Date(),
-      note: `Nagad payment successful. Ref: ${paymentReferenceId}`,
-    });
-    await order.save();
+    await markOrderPaymentSuccess({
+      order,
 
-    // Clear cart
-    await Cart.findOneAndUpdate({ user: order.user }, { items: [] });
+      paymentMethod:
+        "nagad",
+
+      transactionId:
+        verifyResponse.issuerPaymentRefNo ||
+        paymentReferenceId,
+
+      note:
+        `Nagad payment successful. Ref: ${paymentReferenceId}`,
+    });
 
     return NextResponse.redirect(
       `${baseUrl}/checkout/success?order=${order.orderNumber}`
     );
   } catch (error) {
-    console.error("Nagad callback error:", error.message);
+    console.error(
+      "Nagad callback error:",
+      error
+    );
+
     return NextResponse.redirect(
-      `${baseUrl}/checkout/failed?reason=callback_error`
+      `${baseUrl}/checkout/failed?reason=callback_error&orderId=${orderId || ""}`
     );
   }
 }

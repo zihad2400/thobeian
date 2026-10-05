@@ -25,7 +25,9 @@ const STATUS_TABS = [
   { id: "confirmed", label: "Confirmed" },
   { id: "processing", label: "Processing" },
   { id: "shipped", label: "Shipped" },
+  { id: "out_for_delivery", label: "Out for Delivery" },
   { id: "delivered", label: "Delivered" },
+  { id: "returned", label: "Returned" },
   { id: "cancelled", label: "Cancelled" },
 ];
 
@@ -36,6 +38,7 @@ const STATUS_COLORS = {
   shipped: "bg-gold/10 text-gold border-gold/30",
   out_for_delivery: "bg-gold/10 text-gold border-gold/30",
   delivered: "bg-success/10 text-success border-success/30",
+  returned: "bg-warning/10 text-warning border-warning/30",
   cancelled: "bg-error/10 text-error border-error/30",
 };
 
@@ -48,16 +51,54 @@ export default function AdminOrdersPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   useEffect(() => {
-    fetchOrders();
+    let active = true;
+
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+
+        const { data } = await axios.get("/api/admin/orders?status=all");
+
+        if (!active) return;
+
+        setOrders(data.data.orders || []);
+      } catch (error) {
+        console.error("Failed to load orders:", error);
+
+        if (active) {
+          toast.error(
+            error.response?.data?.message ||
+              "Failed to load orders"
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadOrders();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get("/api/admin/orders?status=all");
+
+      const { data } = await axios.get(
+        "/api/admin/orders?status=all"
+      );
+
       setOrders(data.data.orders || []);
     } catch (error) {
-      toast.error("Failed to load orders");
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to load orders"
+      );
     } finally {
       setLoading(false);
     }
@@ -72,7 +113,9 @@ export default function AdminOrdersPage() {
       setDeleting(id);
       const { data } = await axios.delete(`/api/admin/orders/${id}`);
       toast.success(data.message || "Order deleted");
-      setOrders(orders.filter((o) => o._id !== id));
+      setOrders((current) =>
+        current.filter((o) => o._id !== id)
+      );
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
     } finally {

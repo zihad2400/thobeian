@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import axios from "axios";
 import toast from "@/lib/toast";
 import {
@@ -31,6 +32,7 @@ const STATUS_OPTIONS = [
   { id: "shipped", label: "Shipped" },
   { id: "out_for_delivery", label: "Out for Delivery" },
   { id: "delivered", label: "Delivered" },
+  { id: "returned", label: "Returned" },
   { id: "cancelled", label: "Cancelled" },
 ];
 
@@ -41,6 +43,7 @@ const STATUS_STEPS = [
   { id: "shipped", label: "Shipped", icon: Truck },
   { id: "out_for_delivery", label: "Out for Delivery", icon: Truck },
   { id: "delivered", label: "Delivered", icon: CheckCircle },
+  { id: "returned", label: "Returned", icon: Package },
 ];
 
 export default function AdminOrderDetailPage() {
@@ -58,25 +61,43 @@ export default function AdminOrderDetailPage() {
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    fetchOrder();
-  }, [id]);
+    let active = true;
 
-  const fetchOrder = async () => {
-    try {
-      setLoading(true);
-      const { data } = await axios.get(`/api/admin/orders/${id}`);
-      setOrder(data.data.order);
-      setStatus(data.data.order.orderStatus);
-      setTrackingNumber(data.data.order.trackingNumber || "");
-      setPaymentStatus(data.data.order.paymentStatus);
-      setNotes(data.data.order.notes || "");
-    } catch (error) {
-      toast.error("Order not found");
-      router.push("/admin/orders");
-    } finally {
-      setLoading(false);
+    const loadOrder = async () => {
+      try {
+        setLoading(true);
+
+        const { data } = await axios.get(`/api/admin/orders/${id}`);
+
+        if (!active) return;
+
+        setOrder(data.data.order);
+        setStatus(data.data.order.orderStatus);
+        setTrackingNumber(data.data.order.trackingNumber || "");
+        setPaymentStatus(data.data.order.paymentStatus);
+        setNotes(data.data.order.notes || "");
+      } catch (error) {
+        console.error("Failed to load order:", error);
+
+        if (active) {
+          toast.error("Order not found");
+          router.push("/admin/orders");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (id) {
+      loadOrder();
     }
-  };
+
+    return () => {
+      active = false;
+    };
+  }, [id, router]);
 
   const handleSave = async () => {
     try {
@@ -319,11 +340,25 @@ export default function AdminOrderDetailPage() {
                   key={idx}
                   className="flex gap-4 pb-4 border-b border-border last:border-0 last:pb-0"
                 >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-16 h-20 object-cover shrink-0"
-                  />
+                  <div className="relative w-16 h-20 shrink-0 overflow-hidden bg-background-luxury">
+                    {item.image ? (
+                      <Image
+                        src={item.image}
+                        alt={item.name || "Order item"}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Package
+                          size={18}
+                          className="text-text-muted"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-charcoal">
                       {item.name}

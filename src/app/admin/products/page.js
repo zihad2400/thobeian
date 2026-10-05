@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import axios from "axios";
 import toast from "@/lib/toast";
 import {
@@ -60,7 +61,9 @@ export default function AdminProductsPage() {
       setDeleting(id);
       await axios.delete(`/api/admin/products/${id}`);
       toast.success("Product deleted");
-      fetchProducts();
+      setProducts((current) =>
+        current.filter((product) => product._id !== id)
+      );
     } catch (error) {
       toast.error("Delete failed");
     } finally {
@@ -173,11 +176,25 @@ export default function AdminProductsPage() {
                 >
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={product.images?.[0]}
-                        alt={product.name}
-                        className="w-12 h-14 object-cover shrink-0"
-                      />
+                      <div className="relative h-14 w-12 shrink-0 overflow-hidden bg-background-luxury">
+                        {product.images?.[0] ? (
+                          <Image
+                            src={product.images[0]}
+                            alt={product.name || "Product image"}
+                            fill
+                            sizes="48px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Package
+                              size={16}
+                              className="text-border"
+                              aria-hidden="true"
+                            />
+                          </div>
+                        )}
+                      </div>
                       <div className="min-w-0">
                         <p className="text-sm text-charcoal font-medium truncate">
                           {product.name}

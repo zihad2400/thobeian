@@ -1,26 +1,93 @@
 import { NextResponse } from "next/server";
+
 import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
-import { executePayment } from "@/lib/bkash";
+
+import {
+  executePayment,
+} from "@/lib/bkash";
+
+import {
+  markOrderPaymentSuccess,
+  markOrderPaymentFailed,
+} from "@/lib/orderPayment";
 
 export async function GET(req) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000";
+
+  let orderId = null;
+
   try {
-    const { searchParams } = new URL(req.url);
-    const paymentID = searchParams.get("paymentID");
-    const status = searchParams.get("status");
-    const orderId = searchParams.get("orderId");
+    const {
+      searchParams,
+    } = new URL(req.url);
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const paymentID =
+      searchParams.get(
+        "paymentID"
+      );
 
-    // User cancelled
-    if (status === "cancel") {
+    const status =
+      searchParams.get(
+        "status"
+      );
+
+    orderId =
+      searchParams.get(
+        "orderId"
+      );
+
+    /*
+     * Cancel
+     */
+    if (
+      status === "cancel"
+    ) {
+      await connectDB();
+
+      const order =
+        await Order.findById(
+          orderId
+        );
+
+      if (order) {
+        await markOrderPaymentFailed({
+          order,
+
+          reason:
+            "bKash payment cancelled by customer. Reserved stock released.",
+        });
+      }
+
       return NextResponse.redirect(
         `${baseUrl}/checkout/failed?reason=cancelled&orderId=${orderId}`
       );
     }
 
-    // User failed
-    if (status === "failure") {
+    /*
+     * Failure
+     */
+    if (
+      status === "failure"
+    ) {
+      await connectDB();
+
+      const order =
+        await Order.findById(
+          orderId
+        );
+
+      if (order) {
+        await markOrderPaymentFailed({
+          order,
+
+          reason:
+            "bKash payment failed. Reserved stock released.",
+        });
+      }
+
       return NextResponse.redirect(
         `${baseUrl}/checkout/failed?reason=failed&orderId=${orderId}`
       );
@@ -32,45 +99,81 @@ export async function GET(req) {
       );
     }
 
-    // Execute payment
-    const result = await executePayment(paymentID);
+    /*
+     * Execute payment with bKash.
+     */
+    const result =
+      await executePayment(
+        paymentID
+      );
 
-    if (!result || result.statusCode !== "0000") {
+    if (
+      !result ||
+      result.statusCode !==
+        "0000"
+    ) {
+      await connectDB();
+
+      const order =
+        await Order.findById(
+          orderId
+        );
+
+      if (order) {
+        await markOrderPaymentFailed({
+          order,
+
+          reason:
+            "bKash payment execution failed. Reserved stock released.",
+        });
+      }
+
       return NextResponse.redirect(
         `${baseUrl}/checkout/failed?reason=execution_failed&orderId=${orderId}`
       );
     }
 
-    // Update order
     await connectDB();
-    const order = await Order.findById(orderId);
+
+    const order =
+      await Order.findById(
+        orderId
+      );
+
     if (!order) {
       return NextResponse.redirect(
         `${baseUrl}/checkout/failed?reason=order_not_found`
       );
     }
 
-    order.paymentStatus = "paid";
-    order.paymentMethod = "bkash";
-    order.paymentTransactionId = result.trxID || paymentID;
-    order.paymentVerifiedAt = new Date();
-    order.orderStatus = "confirmed";
-    order.statusHistory.push({
-      status: "confirmed",
-      timestamp: new Date(),
-      note: `bKash payment successful. TrxID: ${result.trxID}`,
-    });
-    await order.save();
+    await markOrderPaymentSuccess({
+      order,
 
-    // Redirect to success
+      paymentMethod:
+        "bkash",
+
+      transactionId:
+        result.trxID ||
+        paymentID,
+
+      note:
+        `bKash payment successful. TrxID: ${
+          result.trxID ||
+          paymentID
+        }`,
+    });
+
     return NextResponse.redirect(
       `${baseUrl}/checkout/success?order=${order.orderNumber}`
     );
   } catch (error) {
-    console.error("bKash callback error:", error);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    console.error(
+      "bKash callback error:",
+      error
+    );
+
     return NextResponse.redirect(
-      `${baseUrl}/checkout/failed?reason=callback_error`
+      `${baseUrl}/checkout/failed?reason=callback_error&orderId=${orderId || ""}`
     );
   }
 }
