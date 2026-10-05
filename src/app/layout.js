@@ -21,16 +21,16 @@ export const metadata = {
   keywords: ["thobe", "panjabi", "islamic fashion", "bangladesh"],
   icons: {
     icon: [
-      { url: "/images/logo/thobeian-favicon.png", sizes: "any" },
-      { url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.png", sizes: "any" },
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png", sizes: "16x16", type: "image/png" },
     ],
-    apple: [{ url: "/favicon/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [{ url: "/favicon.png", sizes: "180x180" }],
   },
   openGraph: {
     title: "THOBEIAN — Premium Islamic Fashion",
     description: "Sunnah in Style. Premium Thobes, Jubbas & Panjabis.",
-    images: ["/images/logo/thobeian-logo-optimized.png"],
+    images: ["/navlogo.png"],
     type: "website",
   },
 };
@@ -39,10 +39,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/images/logo/thobeian-favicon.png" />
-        <link rel="icon" href="/favicon/favicon-32x32.png" type="image/png" sizes="32x32" />
-        <link rel="icon" href="/favicon/favicon-16x16.png" type="image/png" sizes="16x16" />
-        <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.png" />
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="16x16" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
         <meta name="theme-color" content="#1F2A44" />
       </head>
       <body className="min-h-screen flex flex-col bg-white">
