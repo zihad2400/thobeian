@@ -78,9 +78,6 @@ export const useCartStore = create((set, get) => ({
       loading: true,
     });
 
-    // INSTANT SUCCESS FEEDBACK
-    toast.success("Added to cart");
-
     try {
       const { data } = await axios.post("/api/cart", {
         productId: product._id,
@@ -99,6 +96,7 @@ export const useCartStore = create((set, get) => ({
         loading: false,
       });
 
+      toast.success("Added to cart");
       return true;
     } catch (error) {
       console.error("Add to cart error:", error);
