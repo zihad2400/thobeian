@@ -33,67 +33,22 @@ export const useCartStore = create((set, get) => ({
     product,
     { size, color, quantity = 1 } = {}
   ) => {
-    const previousItems = get().items;
-    const defaultSize = size || "M";
-    const defaultColor = color || "";
-
-    const existingIndex = previousItems.findIndex(
-      (item) =>
-        item.product?.toString() === product._id?.toString() &&
-        item.size === defaultSize &&
-        item.color === defaultColor
-    );
-
-    let optimisticItems;
-
-    if (existingIndex >= 0) {
-      optimisticItems = previousItems.map((item, index) =>
-        index === existingIndex
-          ? {
-              ...item,
-              quantity: item.quantity + quantity,
-            }
-          : item
-      );
-    } else {
-      optimisticItems = [
-        ...previousItems,
-        {
-          _id: `optimistic-${Date.now()}`,
-          product: product._id,
-          size: defaultSize,
-          color: defaultColor,
-          quantity,
-          price: product.price,
-          name: product.name,
-          image: product.images?.[0] || product.image,
-        },
-      ];
-    }
-
-    // INSTANT UI UPDATE
-    set({
-      items: optimisticItems,
-      initialized: true,
-      loading: true,
-    });
-
     try {
+      set({ loading: true });
+
       const { data } = await axios.post("/api/cart", {
         productId: product._id,
-        size: defaultSize,
-        color: defaultColor,
+        size,
+        color,
         quantity,
         price: product.price,
         name: product.name,
         image: product.images?.[0] || product.image,
       });
 
-      // Sync with real server data
       set({
         items: data.data.items || [],
         initialized: true,
-        loading: false,
       });
 
       toast.success("Added to cart");
@@ -101,18 +56,14 @@ export const useCartStore = create((set, get) => ({
     } catch (error) {
       console.error("Add to cart error:", error);
 
-      // ROLLBACK if server fails
-      set({
-        items: previousItems,
-        loading: false,
-      });
-
       toast.error(
         error.response?.data?.message ||
           "Failed to add to cart"
       );
 
       return false;
+    } finally {
+      set({ loading: false });
     }
   },
 

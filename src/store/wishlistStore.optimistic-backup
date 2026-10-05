@@ -30,41 +30,9 @@ export const useWishlistStore = create((set, get) => ({
   },
 
   toggleWishlist: async (productId) => {
-    const previousItems = get().items;
-
-    const exists = previousItems.some((item) => {
-      const id =
-        typeof item === "string"
-          ? item
-          : item?._id;
-
-      return id?.toString() === productId?.toString();
-    });
-
-    // INSTANT UI UPDATE
-    const optimisticItems = exists
-      ? previousItems.filter((item) => {
-          const id =
-            typeof item === "string"
-              ? item
-              : item?._id;
-
-          return id?.toString() !== productId?.toString();
-        })
-      : [
-          ...previousItems,
-          {
-            _id: productId,
-          },
-        ];
-
-    set({
-      items: optimisticItems,
-      initialized: true,
-      loading: true,
-    });
-
     try {
+      set({ loading: true });
+
       const { data } = await axios.post(
         "/api/wishlist",
         {
@@ -72,11 +40,9 @@ export const useWishlistStore = create((set, get) => ({
         }
       );
 
-      // Sync with real server data
       set({
         items: data.data.products || [],
         initialized: true,
-        loading: false,
       });
 
       toast.success(data.message);
@@ -85,18 +51,14 @@ export const useWishlistStore = create((set, get) => ({
     } catch (error) {
       console.error("Wishlist toggle error:", error);
 
-      // ROLLBACK if server fails
-      set({
-        items: previousItems,
-        loading: false,
-      });
-
       toast.error(
         error.response?.data?.message ||
           "Failed to update wishlist"
       );
 
       return false;
+    } finally {
+      set({ loading: false });
     }
   },
 
@@ -107,7 +69,7 @@ export const useWishlistStore = create((set, get) => ({
           ? item
           : item?._id;
 
-      return id?.toString() === productId?.toString();
+      return id === productId;
     });
   },
 
