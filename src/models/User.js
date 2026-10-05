@@ -27,7 +27,12 @@ const MeasurementSchema = new mongoose.Schema({
 
 const UserSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     email: {
       type: String,
       required: true,
@@ -35,21 +40,54 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    phone: { type: String, trim: true },
-    passwordHash: { type: String, required: true, select: false },
+
+    phone: {
+      type: String,
+      trim: true,
+    },
+
+    passwordHash: {
+      type: String,
+      required: true,
+      select: false,
+    },
+
     role: {
       type: String,
       enum: ["customer", "admin", "superadmin"],
       default: "customer",
     },
-    avatar: { type: String, default: "" },
+
+    avatar: {
+      type: String,
+      default: "",
+    },
+
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
     addresses: [AddressSchema],
+
     measurementProfiles: [MeasurementSchema],
-    isVerified: { type: Boolean, default: false },
-    isActive: { type: Boolean, default: true },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     lastLogin: Date,
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 UserSchema.index({ email: 1 });

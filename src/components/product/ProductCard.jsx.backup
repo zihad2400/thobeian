@@ -1,0 +1,233 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Heart, ShoppingBag } from "lucide-react";
+import toast from "@/lib/toast";
+import { formatPrice, calculateDiscount } from "@/lib/utils";
+import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import RatingStars from "@/components/ui/RatingStars";
+
+export default function ProductCard({ product }) {
+  const router = useRouter();
+
+  const addToCart = useCartStore((s) => s.addToCart);
+  const { user } = useAuthStore();
+  const { isInWishlist, toggleWishlist } = useWishlistStore();
+
+  const discount = calculateDiscount(
+    product.price,
+    product.compareAtPrice
+  );
+
+  const inWishlist = isInWishlist(product._id);
+
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast.error("Please login first");
+      router.push("/login");
+      return;
+    }
+
+    if (!product.inStock) {
+      toast.error("Out of stock");
+      return;
+    }
+
+    const defaultSize = product.sizes?.[0] || "M";
+    const defaultColor = product.colors?.[0] || "";
+
+    await addToCart(
+      {
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+      },
+      {
+        size: defaultSize,
+        color: defaultColor,
+        quantity: 1,
+      }
+    );
+  };
+
+  const handleWishlist = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast.error("Please login first");
+      router.push("/login");
+      return;
+    }
+
+    await toggleWishlist(product._id);
+  };
+
+  return (
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-white transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-xl">
+
+      {/* =========================================================
+          PRODUCT IMAGE
+      ========================================================= */}
+      <Link
+        href={`/product/${product.slug}`}
+        className="relative block w-full overflow-hidden bg-background-secondary"
+        style={{ paddingBottom: "133.33%" }}
+      >
+        <div className="absolute inset-0">
+
+          {/* Main Image */}
+          <img
+            src={product.image}
+            alt={product.name}
+            className="absolute inset-0 h-full w-full object-cover transition-all duration-700 group-hover:scale-105 group-hover:opacity-0"
+            loading="lazy"
+          />
+
+          {/* Hover Image */}
+          <img
+            src={product.hoverImage || product.image}
+            alt={product.name}
+            className="absolute inset-0 h-full w-full scale-105 object-cover opacity-0 transition-all duration-700 group-hover:scale-100 group-hover:opacity-100"
+            loading="lazy"
+          />
+
+        </div>
+
+        {/* =======================================================
+            PRODUCT BADGES
+        ======================================================= */}
+        <div className="absolute left-3 top-3 z-10 flex flex-col gap-2">
+
+          {discount > 0 && (
+            <span className="badge-sale rounded-full px-2.5 py-1 text-[10px]">
+              -{discount}%
+            </span>
+          )}
+
+          {product.badge === "new" && (
+            <span className="badge-gold rounded-full px-2.5 py-1 text-[10px]">
+              New
+            </span>
+          )}
+
+          {product.badge === "bestseller" && (
+            <span className="badge-gold rounded-full px-2.5 py-1 text-[10px]">
+              Bestseller
+            </span>
+          )}
+
+          {product.badge === "featured" && (
+            <span className="badge-gold rounded-full px-2.5 py-1 text-[10px]">
+              Featured
+            </span>
+          )}
+
+        </div>
+
+        {/* =======================================================
+            OUT OF STOCK OVERLAY
+        ======================================================= */}
+        {!product.inStock && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
+
+            <span className="rounded-full border border-charcoal px-4 py-2 text-xs uppercase tracking-widest text-charcoal">
+              Out of Stock
+            </span>
+
+          </div>
+        )}
+
+      </Link>
+
+      {/* =========================================================
+          WISHLIST BUTTON
+      ========================================================= */}
+      <button
+        onClick={handleWishlist}
+        aria-label="Wishlist"
+        className={`absolute right-3 top-3 z-20 rounded-full bg-white/90 p-2.5 shadow-sm backdrop-blur-sm transition-all duration-300 ${
+          inWishlist
+            ? "text-error"
+            : "text-charcoal hover:bg-gold hover:text-white"
+        }`}
+      >
+        <Heart
+          size={16}
+          className={inWishlist ? "fill-error" : ""}
+        />
+      </button>
+
+      {/* =========================================================
+          PRODUCT INFORMATION
+      ========================================================= */}
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+
+        {/* Product Name */}
+        <Link href={`/product/${product.slug}`}>
+          <h3 className="mb-3 min-h-[48px] line-clamp-2 font-serif text-base leading-6 text-charcoal transition-colors hover:text-gold sm:text-lg">
+            {product.name}
+          </h3>
+        </Link>
+
+        {/* Rating */}
+        <div className="mb-3 flex min-h-[18px] items-center gap-1.5">
+
+          <RatingStars
+            value={Math.round(product.rating || 0)}
+            size={12}
+            readonly
+            showCount={false}
+          />
+
+          <span className="text-xs text-text-muted">
+            ({product.reviewCount || 0})
+          </span>
+
+        </div>
+
+        {/* Price */}
+        <div className="mb-4 flex min-h-[28px] flex-wrap items-center gap-x-2 gap-y-1">
+
+          <span className="text-base font-medium text-charcoal sm:text-lg">
+            {formatPrice(product.price)}
+          </span>
+
+          {product.compareAtPrice && (
+            <span className="text-sm text-text-muted line-through">
+              {formatPrice(product.compareAtPrice)}
+            </span>
+          )}
+
+        </div>
+
+        {/* =======================================================
+            ALWAYS VISIBLE ADD TO CART
+        ======================================================= */}
+        <button
+          onClick={handleAddToCart}
+          disabled={!product.inStock}
+          className="mt-auto flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-charcoal px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-white transition-all duration-300 hover:bg-gold active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[46px] sm:text-xs"
+        >
+          <ShoppingBag
+            size={14}
+            className="shrink-0"
+          />
+
+          <span className="truncate">
+            {product.inStock ? "Add to Cart" : "Out of Stock"}
+          </span>
+        </button>
+
+      </div>
+
+    </div>
+  );
+}

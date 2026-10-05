@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { X, Loader2, Send } from "lucide-react";
 import RatingStars from "@/components/ui/RatingStars";
 import { useAuthStore } from "@/store/authStore";

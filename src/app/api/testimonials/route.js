@@ -15,7 +15,7 @@ export async function GET(req) {
       .populate("user", "name city avatar")
       .populate("product", "name slug images")
       .sort({ createdAt: -1 })
-      .limit(8)
+      .limit(50)
       .lean();
 
     const reviewTestimonials = realReviews
@@ -41,14 +41,14 @@ export async function GET(req) {
       isFeatured: true,
     })
       .sort({ sortOrder: 1, createdAt: -1 })
-      .limit(8)
+      .limit(50)
       .lean();
 
     // ===== 3. Combine =====
     const allTestimonials = [
       ...reviewTestimonials,
       ...adminTestimonials.map((t) => ({ ...t, source: "admin" })),
-    ].slice(0, 8);
+    ].slice(0, 50);
 
     // ⚠️ NO FALLBACK — if empty, return empty
     return successResponse({ testimonials: allTestimonials });

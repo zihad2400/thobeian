@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import Link from "next/link";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import {
   Heart,
   Star,
@@ -21,7 +21,6 @@ import Loader from "@/components/ui/Loader";
 import ReviewForm from "@/components/product/ReviewForm";
 import ReviewsList from "@/components/product/ReviewsList";
 import { useCartStore } from "@/store/cartStore";
-import { useAuthStore } from "@/store/authStore";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -47,8 +46,6 @@ export default function ProductDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   const addToCart = useCartStore((s) => s.addToCart);
-  const { user } = useAuthStore();
-
   useEffect(() => {
     fetchProduct();
   }, [slug]);
@@ -89,12 +86,6 @@ export default function ProductDetailPage() {
       return;
     }
 
-    if (!user) {
-      toast.error("Please login first");
-      router.push("/login?redirect=/product/" + slug);
-      return;
-    }
-
     await addToCart(product, {
       size: selectedSize,
       color: selectedColor,
@@ -105,12 +96,6 @@ export default function ProductDetailPage() {
   const handleBuyNow = async () => {
     if (!selectedSize) {
       toast.error("Please select a size");
-      return;
-    }
-
-    if (!user) {
-      toast.error("Please login first");
-      router.push("/login?redirect=/product/" + slug);
       return;
     }
 

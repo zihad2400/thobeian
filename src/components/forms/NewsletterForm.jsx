@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 
 export default function NewsletterForm() {

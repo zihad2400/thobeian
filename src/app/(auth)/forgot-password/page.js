@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import { ArrowLeft, Mail, CheckCircle, Loader2 } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";

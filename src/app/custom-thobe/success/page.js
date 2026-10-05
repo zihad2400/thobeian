@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CheckCircle, Home, Package, Share2 } from "lucide-react";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 function SuccessContent() {
   const searchParams = useSearchParams();

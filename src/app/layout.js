@@ -7,6 +7,7 @@ import WishlistInitializer from "@/components/layout/WishlistInitializer";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import WhatsAppButton from "@/components/ui/WhatsAppButton";
 import { Toaster } from "react-hot-toast";
+import PremiumToast from "@/components/ui/PremiumToast";
 
 export const metadata = {
   metadataBase: new URL(
@@ -37,7 +38,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.png" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
@@ -60,11 +61,33 @@ export default function RootLayout({ children }) {
         />
         <Toaster
           position="top-right"
+          reverseOrder={false}
+          gutter={8}
+          containerStyle={{
+            top: 18,
+            right: 18,
+            zIndex: 99999,
+          }}
           toastOptions={{
+            duration: 3200,
+
+            className:
+              "!w-auto !max-w-[calc(100vw-32px)] !p-0 !bg-transparent !shadow-none",
+
             style: {
-              background: "#1F1F1F",
-              color: "#fff",
-              borderRadius: 0,
+              padding: 0,
+              margin: 0,
+              background: "transparent",
+              boxShadow: "none",
+              border: "none",
+            },
+
+            success: {
+              duration: 3200,
+            },
+
+            error: {
+              duration: 3800,
             },
           }}
         />

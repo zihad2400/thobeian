@@ -334,3 +334,250 @@
     scrollbar-width: none;
   }
 }
+
+/* =========================================================
+   THOBEIAN PREMIUM TOAST SYSTEM
+   ========================================================= */
+
+@keyframes thobeianToastProgress {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.thobeian-toast-progress-normal {
+  animation: thobeianToastProgress 4.2s linear forwards;
+}
+
+.thobeian-toast-progress-error {
+  animation: thobeianToastProgress 5s linear forwards;
+}
+
+
+/* =========================================================
+   ACCESSIBILITY — REDUCE MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .thobeian-toast,
+  .thobeian-toast * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE TOAST REFINEMENT
+   ========================================================= */
+
+@media (max-width: 640px) {
+  .thobeian-toast {
+    border-radius: 16px;
+  }
+}
+
+
+/* =========================================================
+   THOBEIAN COMPACT TOAST
+   ========================================================= */
+
+@keyframes toastCompact {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes toastCompactError {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+
+/* Mobile */
+@media (max-width: 640px) {
+  .thobeian-toast {
+    max-width: calc(100vw - 32px) !important;
+  }
+}
+
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .thobeian-toast,
+  .thobeian-toast * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* =========================================================
+   THOBEIAN PREMIUM COLORFUL TOAST
+   ========================================================= */
+
+@keyframes toastPremium {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.thobeian-toast {
+  isolation: isolate;
+}
+
+.thobeian-toast:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .thobeian-toast {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thobeian-toast,
+  .thobeian-toast * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* =========================================================
+   THOBEIAN PREMIUM COLORFUL TOAST ANIMATIONS
+   ========================================================= */
+
+@keyframes toastPremium {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes toastIconPulse {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+.thobeian-toast {
+  isolation: isolate;
+  will-change: transform, opacity;
+}
+
+.thobeian-toast:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+@media (max-width: 640px) {
+  .thobeian-toast {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thobeian-toast,
+  .thobeian-toast * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* =========================================
+   THOBEIAN PREMIUM ANNOUNCEMENT MARQUEE
+   ========================================= */
+
+@keyframes thobeian-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group-hover\:\[animation-play-state\:paused\] {
+    animation: none !important;
+  }
+}
+
+/* =========================================
+   THOBEIAN LUXURY ANNOUNCEMENT MARQUEE
+   ========================================= */
+
+.announcement-track {
+  animation: thobeian-marquee 28s linear infinite;
+  will-change: transform;
+}
+
+.announcement-shine {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(200, 169, 107, 0.08),
+    rgba(255, 255, 255, 0.55),
+    rgba(200, 169, 107, 0.08),
+    transparent
+  );
+  transform: skewX(-18deg);
+  animation: thobeian-announcement-shine 6s ease-in-out infinite;
+}
+
+@keyframes thobeian-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes thobeian-announcement-shine {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+
+  45%,
+  100% {
+    transform: translateX(420%) skewX(-18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-track,
+  .announcement-shine {
+    animation: none !important;
+  }
+}

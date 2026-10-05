@@ -17,7 +17,7 @@ import {
   Home,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin" },

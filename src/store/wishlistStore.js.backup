@@ -1,0 +1,40 @@
+import { create } from "zustand";
+import axios from "axios";
+import toast from "@/lib/toast";
+
+export const useWishlistStore = create((set, get) => ({
+  items: [],
+  loading: false,
+  initialized: false,
+
+  fetchWishlist: async () => {
+    try {
+      set({ loading: true });
+      const { data } = await axios.get("/api/wishlist");
+      set({ items: data.data.products || [], initialized: true });
+    } catch (error) {
+      set({ items: [], initialized: true });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  toggleWishlist: async (productId) => {
+    try {
+      const { data } = await axios.post("/api/wishlist", { productId });
+      set({ items: data.data.products });
+      toast.success(data.message);
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed");
+      return false;
+    }
+  },
+
+  isInWishlist: (productId) => {
+    return get().items.some((item) => {
+      const id = typeof item === "string" ? item : item._id;
+      return id === productId;
+    });
+  },
+}));

@@ -5,15 +5,19 @@ import { useWishlistStore } from "@/store/wishlistStore";
 import { useAuthStore } from "@/store/authStore";
 
 export default function WishlistInitializer() {
-  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
-  const user = useAuthStore((s) => s.user);
-  const initialized = useAuthStore((s) => s.initialized);
+  const fetchWishlist = useWishlistStore(
+    (s) => s.fetchWishlist
+  );
+
+  const initialized = useAuthStore(
+    (s) => s.initialized
+  );
 
   useEffect(() => {
-    if (initialized && user) {
+    if (initialized) {
       fetchWishlist();
     }
-  }, [user, initialized, fetchWishlist]);
+  }, [initialized, fetchWishlist]);
 
   return null;
 }

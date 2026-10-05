@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast from "@/lib/toast";
 import {
   ArrowLeft,
   Package,
