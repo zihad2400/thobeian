@@ -6,25 +6,81 @@ import { successResponse, errorResponse } from "@/lib/apiResponse";
 export async function GET(req, { params }) {
   try {
     await connectDB();
+
     const { designId } = await params;
-    const design = await CustomThobeDesign.findOne({ designId }).lean();
-    if (!design) return errorResponse("Design not found", 404);
+
+    if (!designId) {
+      return errorResponse("Design ID is required", 400);
+    }
+
+    const design = await CustomThobeDesign.findOne({
+      designId,
+    })
+      .populate("user", "name email phone")
+      .lean();
+
+    if (!design) {
+      return errorResponse("Design not found", 404);
+    }
+
     return successResponse({ design });
   } catch (error) {
-    return errorResponse(error.message, 500);
+    console.error("Custom thobe GET error:", error);
+    return errorResponse("Failed to load design", 500);
   }
 }
 
 export async function DELETE(req, { params }) {
   try {
     await connectDB();
+
     const user = await getCurrentUser();
-    if (!user) return errorResponse("Unauthorized", 401);
+
+    if (!user) {
+      return errorResponse("Unauthorized", 401);
+    }
 
     const { designId } = await params;
-    await CustomThobeDesign.deleteOne({ designId, user: user._id });
-    return successResponse(null, "Design deleted");
+
+    if (!designId) {
+      return errorResponse("Design ID is required", 400);
+    }
+
+    const design = await CustomThobeDesign.findOne({
+      designId,
+    });
+
+    if (!design) {
+      return errorResponse("Design not found", 404);
+    }
+
+    const isAdmin =
+      user.role === "admin" ||
+      user.role === "superadmin";
+
+    if (!isAdmin) {
+      const ownsDesign =
+        design.user &&
+        design.user.toString() === user._id.toString();
+
+      if (!ownsDesign) {
+        return errorResponse("You cannot delete this design", 403);
+      }
+    }
+
+    await CustomThobeDesign.deleteOne({
+      _id: design._id,
+    });
+
+    return successResponse(
+      {
+        deletedId: design._id,
+        designId: design.designId,
+      },
+      "Design deleted successfully"
+    );
   } catch (error) {
-    return errorResponse(error.message, 500);
+    console.error("Custom thobe DELETE error:", error);
+    return errorResponse("Failed to delete design", 500);
   }
 }
