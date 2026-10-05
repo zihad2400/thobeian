@@ -23,20 +23,36 @@ export default function AdminProductsPage() {
   const [deleting, setDeleting] = useState(null);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    let active = true;
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const { data } = await axios.get("/api/admin/products");
-      setProducts(data.data.products || []);
-    } catch (error) {
-      toast.error("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+
+        const { data } = await axios.get("/api/admin/products");
+
+        if (active) {
+          setProducts(data.data.products || []);
+        }
+      } catch (error) {
+        console.error("Failed to load products:", error);
+
+        if (active) {
+          toast.error("Failed to load products");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this product permanently?")) return;
@@ -219,32 +235,58 @@ export default function AdminProductsPage() {
                     </span>
                   </td>
                   <td className="p-4">
-                    <div className="flex items-center justify-end gap-1">
+                    <div
+                      className="flex items-center justify-end gap-1"
+                      aria-label={`Actions for ${product.name}`}
+                    >
                       <Link
                         href={`/product/${product.slug}`}
                         target="_blank"
-                        className="p-2 text-text-muted hover:text-gold"
-                        title="View"
+                        rel="noopener noreferrer"
+                        aria-label={`View ${product.name}`}
+                        title="View product"
+                        className="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-text-muted transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/50 hover:bg-gold/5 hover:text-gold hover:shadow-sm"
                       >
-                        <Eye size={14} />
+                        <Eye
+                          size={15}
+                          strokeWidth={1.8}
+                          className="transition-transform duration-200 group-hover:scale-110"
+                        />
                       </Link>
+
                       <Link
                         href={`/admin/products/${product._id}`}
-                        className="p-2 text-text-muted hover:text-gold"
-                        title="Edit"
+                        aria-label={`Edit ${product.name}`}
+                        title="Edit product"
+                        className="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-text-muted transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/50 hover:bg-gold/5 hover:text-gold hover:shadow-sm"
                       >
-                        <Edit size={14} />
+                        <Edit
+                          size={15}
+                          strokeWidth={1.8}
+                          className="transition-transform duration-200 group-hover:scale-110"
+                        />
                       </Link>
+
                       <button
+                        type="button"
                         onClick={() => handleDelete(product._id)}
                         disabled={deleting === product._id}
-                        className="p-2 text-text-muted hover:text-error disabled:opacity-50"
-                        title="Delete"
+                        aria-label={`Delete ${product.name}`}
+                        title="Delete product"
+                        className="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-text-muted transition-all duration-200 hover:-translate-y-0.5 hover:border-error/30 hover:bg-error/5 hover:text-error hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {deleting === product._id ? (
-                          <Loader2 size={14} className="animate-spin" />
+                          <Loader2
+                            size={15}
+                            strokeWidth={1.8}
+                            className="animate-spin"
+                          />
                         ) : (
-                          <Trash2 size={14} />
+                          <Trash2
+                            size={15}
+                            strokeWidth={1.8}
+                            className="transition-transform duration-200 group-hover:scale-110"
+                          />
                         )}
                       </button>
                     </div>

@@ -1,0 +1,887 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import axios from "axios";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Loader2,
+  Save,
+  Sparkles,
+} from "lucide-react";
+import toast from "@/lib/toast";
+
+const EMPTY_FORM = {
+  name: "",
+  sku: "",
+  description: "",
+  shortDescription: "",
+  category: "",
+  subcategory: "",
+  fabric: "",
+  price: "",
+  compareAtPrice: "",
+  costPrice: "",
+  totalStock: 0,
+  lowStockThreshold: 5,
+  featured: false,
+  bestseller: false,
+  newArrival: true,
+  status: "draft",
+};
+
+export default function EditProductPage() {
+  const params = useParams();
+  const router = useRouter();
+
+  const productId = params?.id;
+
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [categories, setCategories] = useState([]);
+  const [fabrics, setFabrics] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+
+  const [error, setError] = useState("");
+  const [optionsError, setOptionsError] = useState("");
+
+  useEffect(() => {
+    if (!productId) return;
+
+    let active = true;
+
+    const loadProduct = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await axios.get(
+          `/api/admin/products/${productId}`
+        );
+
+        const product =
+          response?.data?.data?.product ||
+          response?.data?.product;
+
+        if (!product) {
+          throw new Error("Product not found");
+        }
+
+        if (active) {
+          setForm({
+            name: product.name || "",
+            sku: product.sku || "",
+            description: product.description || "",
+            shortDescription: product.shortDescription || "",
+            category: product.category
+              ? String(product.category)
+              : "",
+            subcategory: product.subcategory
+              ? String(product.subcategory)
+              : "",
+            fabric: product.fabric
+              ? String(product.fabric)
+              : "",
+            price:
+              product.price !== undefined &&
+              product.price !== null
+                ? String(product.price)
+                : "",
+            compareAtPrice:
+              product.compareAtPrice !== undefined &&
+              product.compareAtPrice !== null
+                ? String(product.compareAtPrice)
+                : "",
+            costPrice:
+              product.costPrice !== undefined &&
+              product.costPrice !== null
+                ? String(product.costPrice)
+                : "",
+            totalStock: Number(product.totalStock || 0),
+            lowStockThreshold: Number(
+              product.lowStockThreshold ?? 5
+            ),
+            featured: Boolean(product.featured),
+            bestseller: Boolean(product.bestseller),
+            newArrival:
+              product.newArrival === undefined
+                ? true
+                : Boolean(product.newArrival),
+            status: product.status || "draft",
+          });
+        }
+      } catch (err) {
+        console.error("Product loading error:", err);
+
+        if (active) {
+          setError(
+            err?.response?.data?.message ||
+              err?.message ||
+              "Failed to load product"
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProduct();
+
+    return () => {
+      active = false;
+    };
+  }, [productId]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadOptions = async () => {
+      try {
+        setLoadingOptions(true);
+        setOptionsError("");
+
+        const [categoryResponse, fabricResponse] =
+          await Promise.all([
+            axios.get("/api/categories"),
+            axios.get("/api/admin/fabrics"),
+          ]);
+
+        const categoryData =
+          categoryResponse?.data?.data?.categories ||
+          categoryResponse?.data?.categories ||
+          [];
+
+        const fabricData =
+          fabricResponse?.data?.data?.fabrics ||
+          fabricResponse?.data?.fabrics ||
+          [];
+
+        if (active) {
+          setCategories(
+            Array.isArray(categoryData)
+              ? categoryData
+              : []
+          );
+
+          setFabrics(
+            Array.isArray(fabricData)
+              ? fabricData
+              : []
+          );
+        }
+      } catch (err) {
+        console.error("Edit options loading error:", err);
+
+        if (active) {
+          setOptionsError(
+            err?.response?.data?.message ||
+              "Could not load categories or fabrics"
+          );
+        }
+      } finally {
+        if (active) {
+          setLoadingOptions(false);
+        }
+      }
+    };
+
+    loadOptions();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const subcategories = useMemo(() => {
+    if (!form.category) return [];
+
+    return categories.filter(
+      (item) =>
+        String(
+          item.parent ||
+            item.parentCategory ||
+            item.parentId ||
+            ""
+        ) === String(form.category)
+    );
+  }, [categories, form.category]);
+
+  const updateField = (field, value) => {
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!productId) {
+      toast.error("Product ID is missing");
+      return;
+    }
+
+    if (!form.name.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+
+    if (!form.category) {
+      toast.error("Please select a category");
+      return;
+    }
+
+    if (!form.price || Number(form.price) <= 0) {
+      toast.error("Please enter a valid price");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const payload = {
+        name: form.name.trim(),
+        sku: form.sku.trim(),
+        description: form.description.trim(),
+        shortDescription: form.shortDescription.trim(),
+
+        category: form.category,
+
+        ...(form.subcategory
+          ? { subcategory: form.subcategory }
+          : { subcategory: undefined }),
+
+        ...(form.fabric
+          ? { fabric: form.fabric }
+          : { fabric: undefined }),
+
+        price: Number(form.price),
+
+        ...(form.compareAtPrice
+          ? {
+              compareAtPrice: Number(
+                form.compareAtPrice
+              ),
+            }
+          : {
+              compareAtPrice: undefined,
+            }),
+
+        ...(form.costPrice
+          ? {
+              costPrice: Number(form.costPrice),
+            }
+          : {
+              costPrice: undefined,
+            }),
+
+        totalStock: Number(form.totalStock || 0),
+
+        lowStockThreshold: Number(
+          form.lowStockThreshold ?? 5
+        ),
+
+        featured: Boolean(form.featured),
+        bestseller: Boolean(form.bestseller),
+        newArrival: Boolean(form.newArrival),
+
+        status: form.status,
+      };
+
+      await axios.patch(
+        `/api/admin/products/${productId}`,
+        payload
+      );
+
+      toast.success("Product updated successfully");
+
+      router.push("/admin/products");
+      router.refresh();
+    } catch (err) {
+      console.error("Product update error:", err);
+
+      toast.error(
+        err?.response?.data?.message ||
+          "Failed to update product"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2
+            size={28}
+            className="animate-spin text-gold"
+          />
+          <p className="text-sm text-text-muted">
+            Loading product...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="w-full max-w-lg border border-border bg-white p-8 text-center">
+          <p className="text-xs uppercase tracking-widest text-error mb-3">
+            Product Error
+          </p>
+
+          <h1 className="font-serif text-2xl text-charcoal mb-3">
+            Unable to load product
+          </h1>
+
+          <p className="text-sm text-text-muted mb-6">
+            {error}
+          </p>
+
+          <Link
+            href="/admin/products"
+            className="inline-flex items-center gap-2 border border-charcoal bg-charcoal px-5 py-3 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gold hover:border-gold"
+          >
+            <ArrowLeft size={14} />
+            Back to Products
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-12">
+      {/* Header */}
+      <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <Link
+            href="/admin/products"
+            className="mb-4 inline-flex items-center gap-2 text-xs text-text-muted transition hover:text-gold"
+          >
+            <ArrowLeft size={14} />
+            Back to Products
+          </Link>
+
+          <p className="text-xs uppercase tracking-widest text-gold mb-1">
+            Manage
+          </p>
+
+          <h1 className="font-serif text-3xl md:text-4xl text-charcoal">
+            Edit Product
+          </h1>
+
+          <p className="mt-2 max-w-2xl text-sm text-text-muted">
+            Update product information, pricing, inventory,
+            fabric, and publishing settings.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          form="edit-product-form"
+          disabled={saving}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-charcoal px-5 py-3 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gold disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saving ? (
+            <>
+              <Loader2
+                size={15}
+                className="animate-spin"
+              />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={15} />
+              Save Changes
+            </>
+          )}
+        </button>
+      </div>
+
+      {optionsError && (
+        <div className="mb-6 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning">
+          {optionsError}
+        </div>
+      )}
+
+      <form
+        id="edit-product-form"
+        onSubmit={handleSubmit}
+        className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]"
+      >
+        {/* Main */}
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <section className="border border-border bg-white p-5 md:p-7">
+            <div className="mb-6">
+              <p className="text-[10px] uppercase tracking-widest text-gold">
+                Product
+              </p>
+              <h2 className="mt-1 font-serif text-xl text-charcoal">
+                Basic Information
+              </h2>
+            </div>
+
+            <div className="space-y-5">
+              <Field label="Product Name" required>
+                <input
+                  value={form.name}
+                  onChange={(event) =>
+                    updateField(
+                      "name",
+                      event.target.value
+                    )
+                  }
+                  className="input"
+                  placeholder="Premium Thobe"
+                />
+              </Field>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field label="SKU">
+                  <input
+                    value={form.sku}
+                    onChange={(event) =>
+                      updateField(
+                        "sku",
+                        event.target.value
+                      )
+                    }
+                    className="input font-mono"
+                    placeholder="THB-001"
+                  />
+                </Field>
+
+                <Field label="Status">
+                  <Select
+                    value={form.status}
+                    onChange={(value) =>
+                      updateField("status", value)
+                    }
+                    options={[
+                      {
+                        value: "draft",
+                        label: "Draft",
+                      },
+                      {
+                        value: "published",
+                        label: "Published",
+                      },
+                      {
+                        value: "archived",
+                        label: "Archived",
+                      },
+                    ]}
+                  />
+                </Field>
+              </div>
+
+              <Field label="Short Description">
+                <input
+                  value={form.shortDescription}
+                  onChange={(event) =>
+                    updateField(
+                      "shortDescription",
+                      event.target.value
+                    )
+                  }
+                  className="input"
+                  placeholder="A short premium description..."
+                />
+              </Field>
+
+              <Field label="Description">
+                <textarea
+                  value={form.description}
+                  onChange={(event) =>
+                    updateField(
+                      "description",
+                      event.target.value
+                    )
+                  }
+                  rows={7}
+                  className="input resize-y"
+                  placeholder="Detailed product description..."
+                />
+              </Field>
+            </div>
+          </section>
+
+          {/* Organization */}
+          <section className="border border-border bg-white p-5 md:p-7">
+            <div className="mb-6">
+              <p className="text-[10px] uppercase tracking-widest text-gold">
+                Organization
+              </p>
+              <h2 className="mt-1 font-serif text-xl text-charcoal">
+                Category & Fabric
+              </h2>
+            </div>
+
+            <div className="space-y-5">
+              <Field label="Category" required>
+                <Select
+                  value={form.category}
+                  onChange={(value) => {
+                    updateField("category", value);
+                    updateField("subcategory", "");
+                  }}
+                  loading={loadingOptions}
+                  options={categories.map(
+                    (category) => ({
+                      value: category._id,
+                      label: category.name,
+                    })
+                  )}
+                  placeholder="Select category"
+                />
+              </Field>
+
+              <Field label="Subcategory">
+                <Select
+                  value={form.subcategory}
+                  onChange={(value) =>
+                    updateField(
+                      "subcategory",
+                      value
+                    )
+                  }
+                  loading={loadingOptions}
+                  disabled={
+                    !form.category ||
+                    subcategories.length === 0
+                  }
+                  options={subcategories.map(
+                    (category) => ({
+                      value: category._id,
+                      label: category.name,
+                    })
+                  )}
+                  placeholder={
+                    !form.category
+                      ? "Select category first"
+                      : subcategories.length === 0
+                      ? "No subcategories"
+                      : "Select subcategory"
+                  }
+                />
+              </Field>
+
+              <Field label="Fabric">
+                <Select
+                  value={form.fabric}
+                  onChange={(value) =>
+                    updateField("fabric", value)
+                  }
+                  loading={loadingOptions}
+                  options={fabrics.map((fabric) => ({
+                    value: fabric._id,
+                    label:
+                      Number(fabric.priceModifier) > 0
+                        ? `${fabric.name} (+৳${Number(
+                            fabric.priceModifier
+                          ).toLocaleString("en-BD")})`
+                        : fabric.name,
+                  }))}
+                  placeholder="Select fabric"
+                />
+              </Field>
+            </div>
+          </section>
+
+          {/* Pricing */}
+          <section className="border border-border bg-white p-5 md:p-7">
+            <div className="mb-6">
+              <p className="text-[10px] uppercase tracking-widest text-gold">
+                Commerce
+              </p>
+              <h2 className="mt-1 font-serif text-xl text-charcoal">
+                Pricing & Inventory
+              </h2>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              <Field label="Price" required>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.price}
+                  onChange={(event) =>
+                    updateField(
+                      "price",
+                      event.target.value
+                    )
+                  }
+                  className="input"
+                  placeholder="5490"
+                />
+              </Field>
+
+              <Field label="Compare-at Price">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.compareAtPrice}
+                  onChange={(event) =>
+                    updateField(
+                      "compareAtPrice",
+                      event.target.value
+                    )
+                  }
+                  className="input"
+                  placeholder="6490"
+                />
+              </Field>
+
+              <Field label="Cost Price">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.costPrice}
+                  onChange={(event) =>
+                    updateField(
+                      "costPrice",
+                      event.target.value
+                    )
+                  }
+                  className="input"
+                  placeholder="3200"
+                />
+              </Field>
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <Field label="Total Stock">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.totalStock}
+                  onChange={(event) =>
+                    updateField(
+                      "totalStock",
+                      event.target.value
+                    )
+                  }
+                  className="input"
+                />
+              </Field>
+
+              <Field label="Low Stock Threshold">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.lowStockThreshold}
+                  onChange={(event) =>
+                    updateField(
+                      "lowStockThreshold",
+                      event.target.value
+                    )
+                  }
+                  className="input"
+                />
+              </Field>
+            </div>
+          </section>
+        </div>
+
+        {/* Sidebar */}
+        <aside className="space-y-6">
+          {/* Publishing */}
+          <section className="border border-border bg-white p-5">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold">
+                <Sparkles size={18} />
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-gold">
+                  Merchandising
+                </p>
+                <h2 className="font-serif text-lg text-charcoal">
+                  Visibility
+                </h2>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Toggle
+                label="Featured Product"
+                checked={form.featured}
+                onChange={(value) =>
+                  updateField("featured", value)
+                }
+              />
+
+              <Toggle
+                label="Bestseller"
+                checked={form.bestseller}
+                onChange={(value) =>
+                  updateField("bestseller", value)
+                }
+              />
+
+              <Toggle
+                label="New Arrival"
+                checked={form.newArrival}
+                onChange={(value) =>
+                  updateField("newArrival", value)
+                }
+              />
+            </div>
+          </section>
+
+          {/* Save Card */}
+          <section className="border border-gold/20 bg-background-luxury p-5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 text-gold">
+                <Check size={18} />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-charcoal">
+                  Ready to update?
+                </h3>
+
+                <p className="mt-1 text-xs leading-5 text-text-muted">
+                  Your changes will be saved directly to
+                  the product database.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-charcoal px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-gold disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? (
+                <>
+                  <Loader2
+                    size={15}
+                    className="animate-spin"
+                  />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Save size={15} />
+                  Update Product
+                </>
+              )}
+            </button>
+          </section>
+        </aside>
+      </form>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  required = false,
+  children,
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        {label}
+        {required && (
+          <span className="ml-1 text-error">*</span>
+        )}
+      </span>
+
+      {children}
+    </label>
+  );
+}
+
+function Select({
+  value,
+  onChange,
+  options = [],
+  placeholder = "Select...",
+  disabled = false,
+  loading = false,
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        disabled={disabled || loading}
+        className="input appearance-none pr-11 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <option value="">
+          {loading ? "Loading..." : placeholder}
+        </option>
+
+        {options.map((option) => (
+          <option
+            key={String(option.value)}
+            value={option.value}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      <ChevronDown
+        size={17}
+        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-text-muted"
+      />
+    </div>
+  );
+}
+
+function Toggle({
+  label,
+  checked,
+  onChange,
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between rounded-xl border border-border bg-white px-4 py-3 text-left transition hover:border-gold/40"
+    >
+      <span className="text-xs font-medium text-charcoal">
+        {label}
+      </span>
+
+      <span
+        className={`relative h-5 w-9 rounded-full transition ${
+          checked
+            ? "bg-gold"
+            : "bg-border"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition ${
+            checked
+              ? "left-[18px]"
+              : "left-0.5"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}

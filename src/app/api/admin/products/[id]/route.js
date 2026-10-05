@@ -32,8 +32,18 @@ export async function PATCH(req, { params }) {
     const { id } = await params;
     const body = await req.json();
 
-    const product = await Product.findByIdAndUpdate(id, body, { new: true });
-    if (!product) return errorResponse("Product not found", 404);
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { $set: body },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!product) {
+      return errorResponse("Product not found", 404);
+    }
 
     return successResponse({ product }, "Product updated");
   } catch (error) {
