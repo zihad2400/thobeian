@@ -46,7 +46,7 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/favicon.png" />
         <meta name="theme-color" content="#1F2A44" />
       </head>
-      <body className="min-h-screen flex flex-col bg-white">
+      <body suppressHydrationWarning className="min-h-screen flex flex-col bg-white">
         <AuthInitializer />
         <CartInitializer />
         <WishlistInitializer />

@@ -17,7 +17,7 @@ const CONFIG = {
     bg: "#FFFDF7",
     iconBg: "#F4E8CC",
     title: "Success",
-    duration: 1400,
+    duration: 2200,
   },
 
   error: {
@@ -27,7 +27,7 @@ const CONFIG = {
     bg: "#FFF8F9",
     iconBg: "#F8E1E4",
     title: "Something went wrong",
-    duration: 1600,
+    duration: 2600,
   },
 
   warning: {
@@ -37,7 +37,7 @@ const CONFIG = {
     bg: "#FFFDF5",
     iconBg: "#F8EACB",
     title: "Attention",
-    duration: 1600,
+    duration: 2400,
   },
 
   info: {
@@ -47,7 +47,7 @@ const CONFIG = {
     bg: "#F8FBFF",
     iconBg: "#E1EDF7",
     title: "Information",
-    duration: 1400,
+    duration: 2200,
   },
 };
 

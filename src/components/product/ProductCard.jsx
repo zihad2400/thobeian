@@ -55,7 +55,7 @@ export default function ProductCard({ product }) {
   };
 
   return (
-    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-white transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-xl">
+    <div className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-white transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-xl">
 
       {/* PRODUCT IMAGE */}
       <Link
@@ -142,16 +142,20 @@ export default function ProductCard({ product }) {
       </button>
 
       {/* PRODUCT INFORMATION */}
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
+      <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4 lg:p-5">
 
-        <Link href={`/product/${product.slug}`}>
-          <h3 className="mb-3 min-h-[48px] line-clamp-2 font-serif text-base leading-6 text-charcoal transition-colors hover:text-gold sm:text-lg">
+        {/* PRODUCT NAME */}
+        <Link
+          href={`/product/${product.slug}`}
+          className="block min-w-0"
+        >
+          <h3 className="line-clamp-2 min-h-[44px] font-serif text-[15px] leading-[1.45] text-charcoal transition-colors hover:text-gold sm:min-h-[48px] sm:text-base sm:leading-6 lg:text-lg">
             {product.name}
           </h3>
         </Link>
 
         {/* RATING */}
-        <div className="mb-3 flex min-h-[18px] items-center gap-1.5">
+        <div className="mt-1.5 flex h-[18px] shrink-0 items-center gap-1.5 sm:mt-2">
 
           <RatingStars
             value={Math.round(product.rating || 0)}
@@ -160,21 +164,21 @@ export default function ProductCard({ product }) {
             showCount={false}
           />
 
-          <span className="text-xs text-text-muted">
+          <span className="whitespace-nowrap text-[11px] leading-none text-text-muted sm:text-xs">
             ({product.reviewCount || 0})
           </span>
 
         </div>
 
         {/* PRICE */}
-        <div className="mb-4 flex min-h-[28px] flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="mt-1.5 flex h-[28px] shrink-0 items-center gap-x-2 overflow-hidden sm:mt-2">
 
-          <span className="text-base font-medium text-charcoal sm:text-lg">
+          <span className="whitespace-nowrap text-[15px] font-semibold leading-6 text-charcoal sm:text-base lg:text-lg">
             {formatPrice(product.price)}
           </span>
 
           {product.compareAtPrice && (
-            <span className="text-sm text-text-muted line-through">
+            <span className="whitespace-nowrap text-[12px] leading-5 text-text-muted line-through sm:text-sm">
               {formatPrice(product.compareAtPrice)}
             </span>
           )}
@@ -185,7 +189,7 @@ export default function ProductCard({ product }) {
         <button
           onClick={handleAddToCart}
           disabled={!product.inStock}
-          className="mt-auto flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-charcoal px-4 py-3 text-[10px] font-medium uppercase tracking-[0.16em] text-white transition-all duration-300 hover:bg-gold active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[46px] sm:text-xs"
+          className="mt-auto flex min-h-[42px] w-full shrink-0 items-center justify-center gap-2 rounded-full bg-charcoal px-3.5 py-2.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white transition-all duration-300 hover:bg-gold active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[44px] sm:px-4 sm:py-3 sm:text-[10px] lg:min-h-[46px] lg:text-xs"
         >
           <ShoppingBag
             size={14}

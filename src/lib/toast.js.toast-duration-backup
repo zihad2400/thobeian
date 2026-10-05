@@ -21,7 +21,7 @@ const showPremiumToast = ({
     {
       duration:
         duration ||
-        (type === "error" ? 1800 : 1600),
+        (type === "error" ? 5000 : 4200),
 
       position: "top-right",
 
