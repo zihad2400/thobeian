@@ -1,16 +1,67 @@
 import mongoose from "mongoose";
 
 const CartItemSchema = new mongoose.Schema({
-  product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+  product: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: function () {
+      return !this.isCustom;
+    },
+  },
+
   variantId: String,
-  name: String,
-  image: String,
-  size: String,
-  color: String,
-  fabric: String,
-  price: { type: Number, required: true },
-  quantity: { type: Number, required: true, min: 1, default: 1 },
-  customConfig: { type: mongoose.Schema.Types.Mixed },
+
+  name: {
+    type: String,
+    trim: true,
+  },
+
+  image: {
+    type: String,
+    default: "",
+  },
+
+  size: {
+    type: String,
+    default: "",
+  },
+
+  color: {
+    type: String,
+    default: "",
+  },
+
+  fabric: {
+    type: String,
+    default: "",
+  },
+
+  price: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1,
+  },
+
+  isCustom: {
+    type: Boolean,
+    default: false,
+  },
+
+  customDesignId: {
+    type: String,
+    default: "",
+  },
+
+  customConfig: {
+    type: mongoose.Schema.Types.Mixed,
+  },
 });
 
 const CartSchema = new mongoose.Schema(

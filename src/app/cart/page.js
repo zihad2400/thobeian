@@ -53,7 +53,7 @@ export default function CartPage() {
           Your Cart is Empty
         </h1>
         <p className="text-text-secondary mb-8 text-center max-w-md">
-          Looks like you haven't added anything to your cart yet.
+          Looks like you haven&apos;t added anything to your cart yet.
         </p>
         <Link href="/shop" className="btn-primary">
           Start Shopping
@@ -82,11 +82,19 @@ export default function CartPage() {
                 className="flex gap-4 p-4 border border-border bg-white"
               >
                 <div className="w-24 h-32 shrink-0 overflow-hidden bg-background-secondary">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#faf9f6] to-[#efe8dc]">
+                      <span className="text-xs font-medium tracking-wide text-[#8b7a62] text-center px-2">
+                        Custom Thobe
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 flex flex-col">

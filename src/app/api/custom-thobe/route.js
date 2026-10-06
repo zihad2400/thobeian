@@ -19,19 +19,105 @@ export async function POST(req) {
     const body = await req.json();
 
     const { config, name, previewImage } = body;
-    if (!config) return errorResponse("Config required", 400);
+
+    if (!config) {
+      return errorResponse("Config required", 400);
+    }
+
+    /*
+     * Preview images are generated SVG data URLs.
+     * Keep a strict payload limit so malformed clients
+     * cannot store unexpectedly large values in MongoDB.
+     */
+    if (
+      previewImage &&
+      typeof previewImage !== "string"
+    ) {
+      return errorResponse(
+        "Invalid preview image",
+        400
+      );
+    }
+
+    if (
+      previewImage &&
+      previewImage.length > 500000
+    ) {
+      return errorResponse(
+        "Preview image is too large",
+        400
+      );
+    }
 
     const totalPrice = calculatePrice(config);
+
+    /*
+     * If the client already has a designId, update that design.
+     * This prevents duplicate CustomThobeDesign documents while
+     * the customer changes options or regenerates the preview.
+     */
+    const existingDesignId =
+      typeof body.designId === "string"
+        ? body.designId.trim()
+        : "";
+
+    let design = null;
+
+    if (existingDesignId) {
+      design = await CustomThobeDesign.findOne({
+        designId: existingDesignId,
+        ...(user
+          ? { user: user._id }
+          : { sessionId }),
+      });
+
+      if (design) {
+        design.config = config;
+        design.totalPrice = totalPrice;
+
+        if (typeof previewImage === "string") {
+          design.previewImage = previewImage;
+        }
+
+        if (typeof name === "string" && name.trim()) {
+          design.name = name.trim();
+        }
+
+        await design.save();
+
+        return successResponse(
+          {
+            designId: design.designId,
+            design: {
+              _id: design._id,
+              designId: design.designId,
+              name: design.name,
+              config: design.config,
+              totalPrice: design.totalPrice,
+              previewImage:
+                design.previewImage || null,
+              createdAt: design.createdAt,
+              updatedAt: design.updatedAt,
+            },
+          },
+          "Design updated successfully"
+        );
+      }
+    }
+
     const designId = generateDesignId();
 
-    const design = await CustomThobeDesign.create({
+    design = await CustomThobeDesign.create({
       designId,
       user: user?._id || null,
       sessionId,
       config,
       totalPrice,
       previewImage: previewImage || null,
-      name: name || "My Custom Thobe",
+      name:
+        typeof name === "string" && name.trim()
+          ? name.trim()
+          : "My Custom Thobe",
     });
 
     return successResponse(
@@ -43,7 +129,10 @@ export async function POST(req) {
           name: design.name,
           config: design.config,
           totalPrice: design.totalPrice,
+          previewImage:
+            design.previewImage || null,
           createdAt: design.createdAt,
+          updatedAt: design.updatedAt,
         },
       },
       "Design saved successfully",

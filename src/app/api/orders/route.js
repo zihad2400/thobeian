@@ -3,6 +3,7 @@ import Order from "@/models/Order";
 import Cart from "@/models/Cart";
 import CustomThobeDesign from "@/models/CustomThobeDesign";
 import Product from "@/models/Product";
+import { calculatePrice } from "@/config/customThobe";
 
 import { getCurrentUser } from "@/lib/auth";
 import {
@@ -233,8 +234,7 @@ export async function POST(req) {
     const trustedItems = [];
 
     for (const cartItem of cart.items) {
-      const quantity =
-        Number(cartItem.quantity);
+      const quantity = Number(cartItem.quantity);
 
       if (
         !Number.isInteger(quantity) ||
@@ -242,6 +242,112 @@ export async function POST(req) {
       ) {
         return errorResponse(
           "Invalid cart quantity",
+          400
+        );
+      }
+
+      /*
+       * ============================================================
+       * CUSTOM THOBE
+       * Made-to-order item.
+       * Never uses normal Product inventory.
+       * ============================================================
+       */
+      if (cartItem.isCustom === true) {
+        if (!cartItem.customDesignId) {
+          return errorResponse(
+            "Custom design is missing",
+            400
+          );
+        }
+
+        if (quantity !== 1) {
+          return errorResponse(
+            "Custom thobes can only be ordered one at a time",
+            400
+          );
+        }
+
+        const customDesign =
+          await CustomThobeDesign.findOne({
+            designId: cartItem.customDesignId,
+            user: user._id,
+          }).lean();
+
+        if (!customDesign) {
+          return errorResponse(
+            "Custom thobe design not found or access denied",
+            404
+          );
+        }
+
+        const customPrice =
+          calculatePrice(
+            customDesign.config
+          );
+
+        trustedItems.push({
+          product: undefined,
+
+          variantId: "",
+
+          name:
+            customDesign.name?.trim() ||
+            "Custom Thobe",
+
+          image:
+            customDesign.previewImage ||
+            cartItem.image ||
+            "",
+
+          sku:
+            `CUSTOM-${customDesign.designId}`,
+
+          size:
+            cartItem.size ||
+            customDesign.config?.size ||
+            customDesign.config?.measurements?.size ||
+            "",
+
+          color:
+            cartItem.color ||
+            customDesign.config?.fabricColor ||
+            "",
+
+          fabric:
+            cartItem.fabric ||
+            customDesign.config?.fabric ||
+            "",
+
+          price: customPrice,
+
+          quantity: 1,
+
+          isCustom: true,
+
+          customDesignId:
+            customDesign.designId,
+
+          customConfig:
+            customDesign.config,
+        });
+
+        continue;
+      }
+
+      /*
+       * ============================================================
+       * NORMAL PRODUCT
+       * Existing production inventory logic.
+       * ============================================================
+       */
+
+      if (!cartItem.product) {
+        return errorResponse(
+          `${
+            cartItem.name ||
+            "A product"
+          } is no longer available`,
           400
         );
       }
@@ -270,27 +376,46 @@ export async function POST(req) {
             (item) =>
               item._id?.toString() ===
               cartItem.variantId.toString()
-          );
+          ) || null;
 
         if (!variant) {
           return errorResponse(
-            `${product.name} selected variant is unavailable`,
+            `${product.name} variant is no longer available`,
+            400
+          );
+        }
+      } else if (
+        Array.isArray(product.variants) &&
+        product.variants.length > 0
+      ) {
+        variant =
+          product.variants.find(
+            (item) =>
+              (!cartItem.size ||
+                item.size === cartItem.size) &&
+              (!cartItem.color ||
+                item.color === cartItem.color) &&
+              (!cartItem.fabric ||
+                item.fabric === cartItem.fabric)
+          ) || null;
+
+        if (!variant) {
+          return errorResponse(
+            `${product.name} selected variant is no longer available`,
             400
           );
         }
       }
 
       const price =
-        typeof variant?.price ===
-        "number"
+        typeof variant?.price === "number"
           ? variant.price
           : product.price;
 
       const stock =
-        typeof variant?.stock ===
-        "number"
+        typeof variant?.stock === "number"
           ? variant.stock
-          : product.totalStock;
+          : Number(product.totalStock || 0);
 
       if (stock < quantity) {
         return errorResponse(
@@ -338,13 +463,11 @@ export async function POST(req) {
 
         quantity,
 
-        isCustom:
-          Boolean(
-            cartItem.customConfig
-          ),
+        isCustom: false,
 
-        customConfig:
-          cartItem.customConfig,
+        customDesignId: "",
+
+        customConfig: undefined,
       });
     }
 
@@ -378,10 +501,22 @@ export async function POST(req) {
     /*
      * Reserve stock atomically.
      */
-    reservedItems =
-      await reserveOrderStock(
-        trustedItems
+    /*
+     * Only normal products use the inventory system.
+     * Custom Thobes are made-to-order and must never consume
+     * normal Product/Variant stock.
+     */
+    const normalStockItems =
+      trustedItems.filter(
+        (item) => item.isCustom !== true
       );
+
+    reservedItems =
+      normalStockItems.length > 0
+        ? await reserveOrderStock(
+            normalStockItems
+          )
+        : [];
 
     const order =
       await Order.create({

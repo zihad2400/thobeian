@@ -1,469 +1,1195 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import toast from "@/lib/toast";
+
+import { useCartStore } from "@/store/cartStore";
 import {
-  ArrowLeft,
-  ArrowRight,
-  Save,
-  Share2,
-  ShoppingBag,
-  RotateCcw,
-  Check,
-  Menu,
-  X,
-  ClipboardCheck,
-} from "lucide-react";
-import { useCustomizerStore } from "@/store/customizerStore";
-import { FABRICS, FABRIC_COLORS, calculatePrice } from "@/config/customThobe";
-import { formatPrice } from "@/lib/utils";
+  BASE_PRICE,
+  FABRICS,
+  FABRIC_COLORS,
+  FITS,
+  COLLAR_TYPES,
+  PLACKETS,
+  BUTTON_STYLES,
+  SLEEVES,
+  CUFFS,
+  CHEST_POCKETS,
+  SIDE_POCKETS,
+  calculatePrice,
+} from "@/config/customThobe";
+
 import ThobePreview from "@/components/customizer/ThobePreview";
 
-// Step imports
-import Step01Measurements from "@/components/customizer/steps/Step01Measurements";
-import Step02Fit from "@/components/customizer/steps/Step02Fit";
-import Step03Collar from "@/components/customizer/steps/Step03Collar";
-import Step04CollarContrast from "@/components/customizer/steps/Step04CollarContrast";
-import Step05Placket from "@/components/customizer/steps/Step05Placket";
-import Step06Buttons from "@/components/customizer/steps/Step06Buttons";
-import Step07Sleeve from "@/components/customizer/steps/Step07Sleeve";
-import Step08Cuff from "@/components/customizer/steps/Step08Cuff";
-import Step09CuffButton from "@/components/customizer/steps/Step09CuffButton";
-import Step10Pocket from "@/components/customizer/steps/Step10Pocket";
-import Step11PocketContrast from "@/components/customizer/steps/Step11PocketContrast";
-import Step12SleeveContrast from "@/components/customizer/steps/Step12SleeveContrast";
-import Step13PlacketContrast from "@/components/customizer/steps/Step13PlacketContrast";
-import Step14SideDesign from "@/components/customizer/steps/Step14SideDesign";
-import Step15Bottom from "@/components/customizer/steps/Step15Bottom";
-import Step16Stitching from "@/components/customizer/steps/Step16Stitching";
-import Step17Embroidery from "@/components/customizer/steps/Step17Embroidery";
-import Step18Monogram from "@/components/customizer/steps/Step18Monogram";
-import Step19Fabric from "@/components/customizer/steps/Step19Fabric";
-import Step20SpecialRequest from "@/components/customizer/steps/Step20SpecialRequest";
-import Step21Confirmation from "@/components/customizer/steps/Step21Confirmation";
-import Step22Review from "@/components/customizer/steps/Step22Review";
-
 const STEPS = [
-  { id: 0, label: "Measurements", component: Step01Measurements },
-  { id: 1, label: "Fit", component: Step02Fit },
-  { id: 2, label: "Collar", component: Step03Collar },
-  { id: 3, label: "Collar Contrast", component: Step04CollarContrast },
-  { id: 4, label: "Placket", component: Step05Placket },
-  { id: 5, label: "Buttons", component: Step06Buttons },
-  { id: 6, label: "Sleeve", component: Step07Sleeve },
-  { id: 7, label: "Cuff", component: Step08Cuff },
-  { id: 8, label: "Cuff Button", component: Step09CuffButton },
-  { id: 9, label: "Pocket", component: Step10Pocket },
-  { id: 10, label: "Pocket Contrast", component: Step11PocketContrast },
-  { id: 11, label: "Sleeve Contrast", component: Step12SleeveContrast },
-  { id: 12, label: "Placket Contrast", component: Step13PlacketContrast },
-  { id: 13, label: "Side Design", component: Step14SideDesign },
-  { id: 14, label: "Bottom / Hem", component: Step15Bottom },
-  { id: 15, label: "Stitching", component: Step16Stitching },
-  { id: 16, label: "Embroidery", component: Step17Embroidery },
-  { id: 17, label: "Monogram", component: Step18Monogram },
-  { id: 18, label: "Fabric & Color", component: Step19Fabric },
-  { id: 19, label: "Special Request", component: Step20SpecialRequest },
-  { id: 20, label: "Confirmation", component: Step21Confirmation },
-  { id: 21, label: "Review & Price", component: Step22Review },
+  {
+    id: "fabric",
+    label: "Fabric",
+    title: "Choose your fabric",
+  },
+  {
+    id: "style",
+    label: "Style",
+    title: "Choose your style",
+  },
+  {
+    id: "details",
+    label: "Details",
+    title: "Refine the details",
+  },
+  {
+    id: "size",
+    label: "Size",
+    title: "Choose your size",
+  },
+  {
+    id: "preview",
+    label: "Preview",
+    title: "Review your thobe",
+  },
 ];
 
-export default function CustomThobePage() {
-  const router = useRouter();
-  const {
-    config,
-    currentStep,
-    setStep,
-    nextStep,
-    prevStep,
-    updateConfig,
-    updateMeasurement,
-    getPrice,
-    resetConfig,
-    designId,
-    setDesignId,
-  } = useCustomizerStore();
+const SIZE_OPTIONS = [
+  { value: "S", label: "S", desc: "Small" },
+  { value: "M", label: "M", desc: "Medium" },
+  { value: "L", label: "L", desc: "Large" },
+  { value: "XL", label: "XL", desc: "Extra Large" },
+  { value: "XXL", label: "2XL", desc: "Extra Extra Large" },
+];
 
-  const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const price = getPrice();
-  const isLastStep = currentStep === STEPS.length - 1;
+const DEFAULT_CONFIG = {
+  fabric: "premium-cotton",
+  fabricColor: "white",
 
-  // Check if all confirmations are done
-  const allConfirmed =
-    config.confirmMeasurements &&
-    config.confirmFitting &&
-    config.confirmChecked;
+  fit: "regular",
 
-  const CurrentStepComponent = STEPS[currentStep]?.component;
+  collarType: "mandarin",
+  collarHeight: "medium",
 
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      const { data } = await axios.post("/api/custom-thobe", {
-        config,
-        name: "My Custom Thobe",
-      });
-      setDesignId(data.data.designId);
-      toast.success(`Design saved! ID: ${data.data.designId}`);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Save failed");
-    } finally {
-      setSaving(false);
-    }
-  };
+  placket: "hidden",
+  buttonStyle: "normal-hole",
+  buttonColor: "matching",
 
-  const handleShare = () => {
-    if (!designId) {
-      toast.error("Please save design first");
-      return;
-    }
-    const url = `${window.location.origin}/custom-thobe?design=${designId}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Share link copied!");
-  };
+  sleeve: "straight",
+  cuff: "standard",
 
-  const handleAddToCart = () => {
-    if (!designId) {
-      toast.error("Please save your design first");
-      return;
-    }
-    toast.success("Added to cart! (Coming soon)");
-  };
+  chestPocket: "none",
+  sidePocket: "none",
 
-  // ===== PLACE ORDER — Main Submit =====
-  const handlePlaceOrder = async () => {
-    // Validation
-    if (!allConfirmed) {
-      toast.error("Please confirm all checkboxes before ordering");
-      setStep(20); // Go back to Confirmation step
-      return;
-    }
+  sideDesign: "plain",
+  bottomStyle: "straight",
 
-    // Check required measurements
-    const requiredMeasurements = ["thobeLength", "chest", "waist", "shoulder", "sleeveLength"];
-    const missing = requiredMeasurements.filter(
-      (key) => !config.measurements[key]
-    );
-    if (missing.length > 0) {
-      toast.error(`Please fill: ${missing.join(", ")}`);
-      setStep(0); // Go back to measurements
-      return;
-    }
+  stitchingStyle: "matching",
+  stitchColor: "matching",
 
-    try {
-      setSubmitting(true);
+  embroidery: "none",
+  embroideryColor: "matching",
+  monogramText: "",
+  monogramPlacement: "chest",
+  monogramColor: "gold",
 
-      // First save design if not saved
-      let finalDesignId = designId;
-      if (!finalDesignId) {
-        const { data } = await axios.post("/api/custom-thobe", {
-          config,
-          name: "My Custom Thobe",
-        });
-        finalDesignId = data.data.designId;
-        setDesignId(finalDesignId);
-      }
+  size: "",
+  measurements: {},
 
-      toast.success("Design submitted successfully!");
-      
-      // Redirect to success page
-      router.push(`/custom-thobe/success?design=${finalDesignId}`);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Order failed");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  specialRequest: "",
+};
 
-  const handleReset = () => {
-    if (confirm("Reset all customization?")) {
-      resetConfig();
-      toast.success("Design reset");
-    }
-  };
-
+function OptionCard({
+  active,
+  title,
+  description,
+  price,
+  onClick,
+}) {
   return (
-    <div className="min-h-screen bg-background-luxury">
-      {/* Header */}
-      <div className="bg-white border-b border-border sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2"
-            >
-              <Menu size={20} />
-            </button>
-            <Link
-              href="/"
-              className="hidden lg:flex text-sm text-text-secondary hover:text-gold items-center gap-1"
-            >
-              <ArrowLeft size={16} /> Home
-            </Link>
-            <h1 className="font-serif text-base md:text-xl text-charcoal flex-1 text-center lg:text-left">
-              Custom Thobe Designer
-            </h1>
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:block text-right mr-2">
-                <p className="text-[10px] text-text-muted">Total</p>
-                <p className="font-serif text-lg text-charcoal">
-                  {formatPrice(price)}
-                </p>
-              </div>
-              <button
-                onClick={handleReset}
-                className="p-2 text-text-secondary hover:text-error transition-colors"
-                title="Reset"
-              >
-                <RotateCcw size={18} />
-              </button>
-            </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group w-full rounded-2xl border p-4 text-left transition-all ${
+        active
+          ? "border-[#C8A96B] bg-[#FBF7EF] shadow-[0_8px_30px_rgba(200,169,107,0.12)]"
+          : "border-[#E8E1D6] bg-white hover:border-[#CFC3B2] hover:shadow-sm"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="font-medium text-[#1F1F1F]">
+            {title}
           </div>
+
+          {description ? (
+            <div className="mt-1 text-xs leading-5 text-[#77716A]">
+              {description}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {price > 0 ? (
+            <span className="text-xs font-medium text-[#9A7842]">
+              +৳{price.toLocaleString("en-BD")}
+            </span>
+          ) : null}
+
+          <span
+            className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+              active
+                ? "border-[#C8A96B] bg-[#C8A96B]"
+                : "border-[#D7CFC3]"
+            }`}
+          >
+            {active ? (
+              <span className="h-2 w-2 rounded-full bg-white" />
+            ) : null}
+          </span>
         </div>
       </div>
+    </button>
+  );
+}
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] bg-white lg:hidden overflow-y-auto">
-          <div className="p-4 flex items-center justify-between border-b border-border">
-            <p className="font-serif text-lg">Steps</p>
-            <button onClick={() => setMobileMenuOpen(false)} className="p-2">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="p-3 space-y-1">
-            {STEPS.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  setStep(s.id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 ${
-                  currentStep === s.id
-                    ? "bg-gold/10 text-gold border-l-2 border-gold font-medium"
-                    : "text-text-secondary hover:bg-background-luxury border-l-2 border-transparent"
-                }`}
-              >
-                <span className="text-[10px] w-6">
-                  {String(s.id + 1).padStart(2, "0")}
-                </span>
-                <span>{s.label}</span>
-              </button>
-            ))}
-          </div>
+function SectionTitle({ eyebrow, title, description }) {
+  return (
+    <div className="mb-6">
+      {eyebrow ? (
+        <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#A7834A]">
+          {eyebrow}
         </div>
-      )}
+      ) : null}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        <div className="grid lg:grid-cols-12 gap-5">
-          {/* LEFT: Steps */}
-          <aside className="hidden lg:block lg:col-span-2">
-            <div className="bg-white border border-border p-3 sticky top-20 max-h-[calc(100vh-100px)] overflow-y-auto">
-              <p className="text-[10px] uppercase tracking-widest text-text-muted mb-2 px-2">
-                Steps
-              </p>
-              <div className="space-y-0.5">
-                {STEPS.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setStep(s.id)}
-                    className={`w-full text-left px-2.5 py-1.5 text-xs transition-colors flex items-center gap-1.5 ${
-                      currentStep === s.id
-                        ? "bg-gold/10 text-gold border-l-2 border-gold font-medium"
-                        : "text-text-secondary hover:text-charcoal hover:bg-background-luxury border-l-2 border-transparent"
-                    }`}
-                  >
-                    <span className="text-[9px] opacity-70">
-                      {String(s.id + 1).padStart(2, "0")}
-                    </span>
-                    <span>{s.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
+      <h2 className="text-2xl font-semibold tracking-tight text-[#1F1F1F]">
+        {title}
+      </h2>
 
-          {/* CENTER: Preview + Step */}
-          <main className="lg:col-span-6 space-y-4">
-            <div className="bg-white border border-border p-5">
-              <div className="aspect-[3/4] max-w-sm mx-auto">
-                <ThobePreview config={config} />
-              </div>
-              <div className="flex items-center justify-center gap-2 mt-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                <p className="text-[10px] text-text-muted uppercase tracking-widest">
-                  Live Preview
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-border p-5">
-              <div className="mb-4">
-                <p className="text-[10px] text-gold uppercase tracking-widest mb-1">
-                  Step {currentStep + 1} of {STEPS.length}
-                </p>
-                <h2 className="font-serif text-xl text-charcoal">
-                  {STEPS[currentStep].label}
-                </h2>
-              </div>
-
-              {CurrentStepComponent && (
-                <CurrentStepComponent
-                  config={config}
-                  updateConfig={updateConfig}
-                  updateMeasurement={updateMeasurement}
-                  setStep={setStep}
-                />
-              )}
-
-              {/* Navigation Buttons */}
-              <div className="flex items-center justify-between gap-3 mt-6 pt-5 border-t border-border">
-                <button
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className="btn-outline text-xs py-2.5 px-4 disabled:opacity-30 flex items-center gap-1.5"
-                >
-                  <ArrowLeft size={14} /> Previous
-                </button>
-
-                {/* STEP 22 — Place Order */}
-                {isLastStep ? (
-                  <button
-                    onClick={handlePlaceOrder}
-                    disabled={submitting || !allConfirmed}
-                    className="btn-primary text-xs py-2.5 px-5 flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? (
-                      <>Submitting...</>
-                    ) : (
-                      <>
-                        <ClipboardCheck size={14} /> Place Order
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={nextStep}
-                    className="btn-primary text-xs py-2.5 px-4 flex items-center gap-1.5"
-                  >
-                    Next <ArrowRight size={14} />
-                  </button>
-                )}
-              </div>
-
-              {/* Hint — for last step */}
-              {isLastStep && !allConfirmed && (
-                <p className="mt-3 text-[10px] text-warning text-center">
-                  ⚠️ Please complete Step 21 (Confirmation) to enable Place Order
-                </p>
-              )}
-            </div>
-          </main>
-
-          {/* RIGHT: Summary */}
-          <aside className="lg:col-span-4">
-            <div className="bg-white border border-border p-5 lg:sticky lg:top-20">
-              <p className="text-[10px] uppercase tracking-widest text-gold mb-1">
-                Your Custom Thobe
-              </p>
-              <h3 className="font-serif text-lg text-charcoal mb-4">
-                Quick Summary
-              </h3>
-
-              {designId && (
-                <div className="mb-4 p-3 bg-success/5 border border-success/30 flex items-center gap-2">
-                  <Check size={14} className="text-success shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-widest text-success">
-                      Design ID
-                    </p>
-                    <p className="text-xs font-mono text-charcoal truncate">
-                      {designId}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2 text-xs mb-4">
-                <Row
-                  label="Fabric"
-                  value={FABRICS.find((f) => f.id === config.fabric)?.name}
-                />
-                <Row
-                  label="Color"
-                  value={
-                    FABRIC_COLORS.find((c) => c.id === config.fabricColor)?.name
-                  }
-                />
-                <Row label="Fit" value={config.fit} />
-                <Row label="Collar" value={config.collarType} />
-              </div>
-
-              <div className="border-t border-border pt-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-charcoal">Total</span>
-                  <span className="font-serif text-2xl text-charcoal">
-                    {formatPrice(price)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="w-full btn-outline text-xs py-2.5 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Save size={14} />
-                  {saving
-                    ? "Saving..."
-                    : designId
-                    ? "Update Design"
-                    : "Save Design"}
-                </button>
-                <button
-                  onClick={handleShare}
-                  disabled={!designId}
-                  className="w-full btn-outline text-xs py-2.5 flex items-center justify-center gap-2 disabled:opacity-30"
-                >
-                  <Share2 size={14} /> Share Design
-                </button>
-                <button
-                  onClick={handleAddToCart}
-                  disabled={!designId}
-                  className="w-full btn-outline text-xs py-2.5 flex items-center justify-center gap-2 disabled:opacity-30"
-                >
-                  <ShoppingBag size={14} /> Add to Cart
-                </button>
-              </div>
-
-              {!designId && (
-                <p className="text-[10px] text-text-muted text-center mt-3">
-                  Save your design to unlock Share & Cart
-                </p>
-              )}
-            </div>
-          </aside>
-        </div>
-      </div>
+      {description ? (
+        <p className="mt-2 max-w-xl text-sm leading-6 text-[#77716A]">
+          {description}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function Row({ label, value }) {
-  if (!value) return null;
+function getOption(list, value) {
+  return list?.find((item) => item.id === value);
+}
+
+function CustomThobePageContent() {
+  const searchParams = useSearchParams();
+  const addToCart = useCartStore((state) => state.addToCart);
+
+  const [step, setStep] = useState(0);
+  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [designId, setDesignId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const previewRef = useRef(null);
+
+  const [loaded, setLoaded] = useState(
+    () => !searchParams.get("designId")
+  );
+
+  const price = useMemo(
+    () => calculatePrice(config),
+    [config]
+  );
+
+  const currentStep = STEPS[step];
+
+  function updateConfig(key, value) {
+    setConfig((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  async function loadExistingDesign(id) {
+    try {
+      setSaving(true);
+
+      const response = await axios.get(
+        `/api/custom-thobe/${encodeURIComponent(id)}`
+      );
+
+      const design =
+        response.data?.data?.design ||
+        response.data?.design;
+
+      if (!design) {
+        throw new Error("Design not found");
+      }
+
+      setDesignId(design.designId);
+      setConfig({
+        ...DEFAULT_CONFIG,
+        ...(design.config || {}),
+      });
+
+      toast.success("Custom design loaded");
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to load this design"
+      );
+    } finally {
+      setSaving(false);
+      setLoaded(true);
+    }
+  }
+
+  useEffect(() => {
+    const id = searchParams.get("designId");
+
+    if (!id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const response = await axios.get(`/api/custom-thobe/${id}`);
+
+        if (cancelled) return;
+
+        const loadedDesign = response.data?.data?.design;
+
+        if (loadedDesign?.config) {
+          setConfig((current) => ({
+            ...current,
+            ...loadedDesign.config,
+          }));
+        }
+
+        if (loadedDesign?.designId) {
+          setDesign(loadedDesign);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Load custom design error:", error);
+          toast.error(
+            error.response?.data?.message ||
+              "Failed to load custom design"
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
+  function createPreviewImage() {
+    const svg = previewRef.current;
+
+    if (!svg) {
+      console.warn("Custom thobe preview SVG is not available.");
+      return "";
+    }
+
+    try {
+      const clone = svg.cloneNode(true);
+
+      clone.setAttribute(
+        "xmlns",
+        "http://www.w3.org/2000/svg"
+      );
+
+      clone.setAttribute(
+        "xmlns:xlink",
+        "http://www.w3.org/1999/xlink"
+      );
+
+      clone.setAttribute("width", "900");
+      clone.setAttribute("height", "1650");
+
+      const svgString =
+        new XMLSerializer().serializeToString(clone);
+
+      const previewImage =
+        "data:image/svg+xml;charset=utf-8," +
+        encodeURIComponent(svgString);
+
+      console.log(
+        "[CUSTOM THOBE PREVIEW]",
+        {
+          svgExists: Boolean(svg),
+          svgLength: svgString.length,
+          previewLength: previewImage.length,
+          previewPrefix: previewImage.slice(0, 80),
+        }
+      );
+
+      return previewImage;
+    } catch (error) {
+      console.error(
+        "Failed to generate custom thobe preview:",
+        error
+      );
+
+      return "";
+    }
+  }
+
+  async function saveDesign() {
+    try {
+      setSaving(true);
+
+      const response = await axios.post(
+        "/api/custom-thobe",
+        {
+          designId,
+          config,
+          name: "Custom Thobe",
+          previewImage: createPreviewImage(),
+        }
+      );
+
+      const design =
+        response.data?.data?.design ||
+        response.data?.design;
+
+      if (design?.designId) {
+        setDesignId(design.designId);
+      }
+
+      return design;
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to save your design"
+      );
+
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAddToCart() {
+    if (!config.size) {
+      toast.error("Please select your size first.");
+      setStep(3);
+      return;
+    }
+
+    try {
+      setAdding(true);
+
+      const design = await saveDesign();
+
+      if (!design?.designId) {
+        throw new Error(
+          "Custom design could not be created"
+        );
+      }
+
+      await addToCart(
+        null,
+        {
+          isCustom: true,
+          customDesignId: design.designId,
+          quantity: 1,
+        }
+      );
+
+      toast.success(
+        "Your custom thobe has been added to cart."
+      );
+
+      // Move to Step 5 / Preview after successful cart addition.
+      setStep(4);
+    } catch (error) {
+      console.error(error);
+
+      if (
+        !error?.response?.data?.message &&
+        !error?.message?.includes("cart")
+      ) {
+        toast.error(
+          "Could not add your custom thobe to cart."
+        );
+      }
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  function next() {
+    if (step === 3 && !config.size) {
+      toast.error("Please select your size.");
+      return;
+    }
+
+    setStep((value) =>
+      Math.min(value + 1, STEPS.length - 1)
+    );
+  }
+
+  function previous() {
+    setStep((value) =>
+      Math.max(value - 1, 0)
+    );
+  }
+
+  function reset() {
+    setConfig(DEFAULT_CONFIG);
+    setDesignId(null);
+    setStep(0);
+  }
+
+  if (!loaded) {
+    return (
+      <main className="min-h-screen w-full overflow-x-hidden bg-[#FAF9F6] px-5 py-20">
+        <div className="mx-auto max-w-6xl animate-pulse">
+          <div className="h-8 w-56 rounded bg-[#EEE8DE]" />
+          <div className="mt-4 h-4 w-96 max-w-full rounded bg-[#EEE8DE]" />
+          <div className="mt-10 h-[500px] rounded-3xl bg-[#F1ECE4]" />
+        </div>
+      </main>
+    );
+  }
+
+  const fabric = getOption(FABRICS, config.fabric);
+  const fabricColor = getOption(
+    FABRIC_COLORS,
+    config.fabricColor
+  );
+
+  const collar = getOption(
+    COLLAR_TYPES,
+    config.collarType
+  );
+
+  const placket = getOption(
+    PLACKETS,
+    config.placket
+  );
+
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-text-muted capitalize">{label}</span>
-      <span className="text-charcoal font-medium truncate text-right capitalize">
-        {value}
-      </span>
-    </div>
+    <main className="min-h-screen w-full overflow-x-hidden bg-[#FAF9F6] text-[#1F1F1F]">
+      <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#A7834A]">
+              THOBEIAN CUSTOM
+            </div>
+
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              Design your thobe
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#77716A]">
+              Choose the essentials, see your thobe evolve,
+              and create a piece made for you.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={reset}
+            className="self-start rounded-full border border-[#DDD4C7] bg-white px-4 py-2 text-xs font-medium text-[#625C55] transition hover:border-[#C8A96B] hover:text-[#8D6D3D] md:self-auto"
+          >
+            Start over
+          </button>
+        </div>
+
+        {/* Progress */}
+        <div className="mb-8 overflow-x-auto">
+          <div className="flex min-w-max items-center">
+            {STEPS.map((item, index) => (
+              <div
+                key={item.id}
+                className="flex items-center"
+              >
+                <button
+                  type="button"
+                  onClick={() => setStep(index)}
+                  className="flex items-center gap-2"
+                >
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
+                      index <= step
+                        ? "bg-[#C8A96B] text-white shadow-[0_6px_20px_rgba(200,169,107,0.28)]"
+                        : "bg-[#1F1F1F] text-white"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+
+                  <span
+                    className={`hidden text-xs font-medium sm:block ${
+                      index === step
+                        ? "text-[#1F1F1F]"
+                        : "text-[#8A847C]"
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                </button>
+
+                {index < STEPS.length - 1 ? (
+                  <span className="mx-3 h-px w-8 bg-[#DED6CA] sm:mx-5 sm:w-14" />
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Main layout */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+
+          {/* Options */}
+          <section className="rounded-[28px] border border-[#E7E0D6] bg-white p-5 shadow-[0_12px_45px_rgba(31,31,31,0.04)] sm:p-8">
+
+            {step === 0 ? (
+              <>
+                <SectionTitle
+                  eyebrow="01 / Fabric"
+                  title="Start with the fabric"
+                  description="Choose a fabric that matches how you want your thobe to feel and wear."
+                />
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {FABRICS.map((item, index) => (
+                    <OptionCard key={`${item.id || item.name || "option"}-${index}`}
+                      active={
+                        config.fabric === item.id
+                      }
+                      title={item.name}
+                      description={item.description}
+                      price={item.price}
+                      onClick={() =>
+                        updateConfig(
+                          "fabric",
+                          item.id
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-8">
+                  <div className="mb-4 text-sm font-semibold">
+                    Colour
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {FABRIC_COLORS.map((item, index) => (
+                      <button
+                        key={`${item.id || item.name || "option"}-${index}`}
+                        type="button"
+                        onClick={() =>
+                          updateConfig(
+                            "fabricColor",
+                            item.id
+                          )
+                        }
+                        className={`rounded-2xl border p-3 text-left transition ${
+                          config.fabricColor ===
+                          item.id
+                            ? "border-[#C8A96B] bg-[#FBF7EF]"
+                            : "border-[#E8E1D6] bg-white hover:border-[#CFC3B2]"
+                        }`}
+                      >
+                        <span
+                          className="mb-2 block h-9 w-full rounded-xl border border-black/10"
+                          style={{
+                            background:
+                              item.color ||
+                              item.hex ||
+                              "#F5F2EC",
+                          }}
+                        />
+
+                        <span className="text-xs font-medium">
+                          {item.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {step === 1 ? (
+              <>
+                <SectionTitle
+                  eyebrow="02 / Style"
+                  title="Define the silhouette"
+                  description="Keep it classic, relaxed or refined. Your core style stays clean and timeless."
+                />
+
+                <div className="mb-8">
+                  <div className="mb-4 text-sm font-semibold">
+                    Fit
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {FITS.map((item, index) => (
+                      <OptionCard
+                        key={`${item.id}-${index}`}
+                        active={config.fit === item.id}
+                        title={item.name}
+                        description={
+                          item.id === "regular"
+                            ? "Balanced everyday fit"
+                            : item.id === "comfort"
+                              ? "More relaxed through the body"
+                              : item.id === "slim"
+                                ? "Clean contemporary silhouette"
+                                : "Extra room and ease"
+                        }
+                        price={item.price}
+                        onClick={() => updateConfig("fit", item.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-4 text-sm font-semibold">
+                    Collar
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {COLLAR_TYPES.map((item, index) => (
+                      <OptionCard key={`${item.id || item.name || "option"}-${index}`}
+                        active={
+                          config.collarType ===
+                          item.id
+                        }
+                        title={item.name}
+                        description={
+                          item.description
+                        }
+                        price={item.price}
+                        onClick={() =>
+                          updateConfig(
+                            "collarType",
+                            item.id
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {step === 2 ? (
+              <>
+                <SectionTitle
+                  eyebrow="03 / Details"
+                  title="Add the finishing details"
+                  description="A few carefully selected details are enough to make the thobe yours."
+                />
+
+                <div className="space-y-8">
+                  <div>
+                    <div className="mb-4 text-sm font-semibold">
+                      Placket
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {PLACKETS.map((item, index) => (
+                        <OptionCard key={`${item.id || item.name || "option"}-${index}`}
+                          active={
+                            config.placket ===
+                            item.id
+                          }
+                          title={item.name}
+                          description={
+                            item.description
+                          }
+                          price={item.price}
+                          onClick={() =>
+                            updateConfig(
+                              "placket",
+                              item.id
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-4 text-sm font-semibold">
+                      Sleeves
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {SLEEVES.map((item, index) => (
+                        <OptionCard key={`${item.id || item.name || "option"}-${index}`}
+                          active={
+                            config.sleeve ===
+                            item.id
+                          }
+                          title={item.name}
+                          description={
+                            item.description
+                          }
+                          price={item.price}
+                          onClick={() =>
+                            updateConfig(
+                              "sleeve",
+                              item.id
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-4 text-sm font-semibold">
+                      Cuffs
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {CUFFS.map((item, index) => (
+                        <OptionCard key={`${item.id || item.name || "option"}-${index}`}
+                          active={
+                            config.cuff ===
+                            item.id
+                          }
+                          title={item.name}
+                          description={
+                            item.description
+                          }
+                          price={item.price}
+                          onClick={() =>
+                            updateConfig(
+                              "cuff",
+                              item.id
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-4 text-sm font-semibold">
+                      Pockets
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {CHEST_POCKETS.map((item, index) => (
+                          <OptionCard
+                            key={`chest-${item.id || item.name || "option"}-${index}`}
+                            active={
+                              config.chestPocket ===
+                              item.id
+                            }
+                            title={`Chest: ${item.name}`}
+                            description={
+                              item.description
+                            }
+                            price={item.price}
+                            onClick={() =>
+                              updateConfig(
+                                "chestPocket",
+                                item.id
+                              )
+                            }
+                          />
+                        )
+                      )}
+
+                      {SIDE_POCKETS.map((item, index) => (
+                          <OptionCard
+                            key={`side-${item.id || item.name || "option"}-${index}`}
+                            active={
+                              config.sidePocket ===
+                              item.id
+                            }
+                            title={`Side: ${item.name}`}
+                            description={
+                              item.description
+                            }
+                            price={item.price}
+                            onClick={() =>
+                              updateConfig(
+                                "sidePocket",
+                                item.id
+                              )
+                            }
+                          />
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-4 text-sm font-semibold">
+                      Monogram
+                    </div>
+
+                    <div className="flex gap-3">
+                      {[
+                        {
+                          value: "none",
+                          label: "No monogram",
+                        },
+                        {
+                          value: "chest",
+                          label: "Chest monogram",
+                        },
+                      ].map((item, index) => (
+                        <button
+                          key={`${item.id || item.name || "option"}-${index}`}
+                          type="button"
+                          onClick={() =>
+                            updateConfig(
+                              "embroidery",
+                              item.id ===
+                                "none"
+                                ? "none"
+                                : "monogram"
+                            )
+                          }
+                          className={`rounded-full border px-4 py-2 text-xs font-medium transition ${
+                            (
+                              item.id ===
+                              "none"
+                                ? config.embroidery ===
+                                  "none"
+                                : config.embroidery ===
+                                  "monogram"
+                            )
+                              ? "border-[#C8A96B] bg-[#FBF7EF] text-[#8D6D3D]"
+                              : "border-[#DDD4C7] bg-white text-[#625C55]"
+                          }`}
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+
+                    {config.embroidery ===
+                    "monogram" ? (
+                      <input
+                        value={
+                          config.monogramText
+                        }
+                        onChange={(event) =>
+                          updateConfig(
+                            "monogramText",
+                            event.target.value
+                              .slice(0, 8)
+                              .toUpperCase()
+                          )
+                        }
+                        placeholder="Your initials"
+                        className="mt-4 w-full rounded-xl border border-[#DDD4C7] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#C8A96B]"
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {step === 3 ? (
+              <>
+                <SectionTitle
+                  eyebrow="04 / Size"
+                  title="Choose your size"
+                  description="Select your usual thobe size. Custom measurements can be added later when your order is confirmed."
+                />
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    {
+                      id: "M",
+                      name: "M",
+                      description: "Medium",
+                      price: 0,
+                    },
+                    {
+                      id: "L",
+                      name: "L",
+                      description: "Large",
+                      price: 0,
+                    },
+                    {
+                      id: "XL",
+                      name: "XL",
+                      description: "Extra Large",
+                      price: 0,
+                    },
+                    {
+                      id: "2XL",
+                      name: "2XL",
+                      description: "Extra Extra Large",
+                      price: 0,
+                    },
+                    {
+                      id: "3XL",
+                      name: "3XL",
+                      description: "3XL",
+                      price: 0,
+                    },
+                  ].map((item, index) => (
+                    <OptionCard
+                      key={`${item.id}-${index}`}
+                      active={config.size === item.id}
+                      title={item.name}
+                      description={item.description}
+                      price={item.price}
+                      onClick={() => updateConfig("size", item.id)}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-[#E8E1D6] bg-[#FBF9F5] p-5">
+                  <div className="text-sm font-semibold text-[#1F1F1F]">
+                    Need a specific fit?
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6 text-[#77716A]">
+                    After checkout, our team can confirm the measurements
+                    required for your custom thobe before production.
+                  </p>
+                </div>
+              </>
+            ) : null}
+
+            {step === 4 ? (
+              <>
+                <SectionTitle
+                  eyebrow="05 / Preview"
+                  title="Your thobe is ready"
+                  description="Review the configuration below before adding your custom thobe to the cart."
+                />
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-[#FCFAF6] p-5">
+                    <div className="text-[10px] uppercase tracking-widest text-[#A7834A]">
+                      Fabric
+                    </div>
+                    <div className="mt-2 text-sm font-semibold">
+                      {fabric?.label ||
+                        config.fabric}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#FCFAF6] p-5">
+                    <div className="text-[10px] uppercase tracking-widest text-[#A7834A]">
+                      Colour
+                    </div>
+                    <div className="mt-2 text-sm font-semibold">
+                      {fabricColor?.label ||
+                        config.fabricColor}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#FCFAF6] p-5">
+                    <div className="text-[10px] uppercase tracking-widest text-[#A7834A]">
+                      Collar
+                    </div>
+                    <div className="mt-2 text-sm font-semibold">
+                      {collar?.label ||
+                        config.collarType}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#FCFAF6] p-5">
+                    <div className="text-[10px] uppercase tracking-widest text-[#A7834A]">
+                      Placket
+                    </div>
+                    <div className="mt-2 text-sm font-semibold">
+                      {placket?.label ||
+                        config.placket}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#FCFAF6] p-5">
+                    <div className="text-[10px] uppercase tracking-widest text-[#A7834A]">
+                      Size
+                    </div>
+                    <div className="mt-2 text-sm font-semibold">
+                      {config.size}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#FCFAF6] p-5">
+                    <div className="text-[10px] uppercase tracking-widest text-[#A7834A]">
+                      Fit
+                    </div>
+                    <div className="mt-2 text-sm font-semibold capitalize">
+                      {config.fit}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-[#E6DCCB] bg-[#FBF7EF] p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      Custom Thobe
+                    </span>
+
+                    <span className="text-lg font-semibold">
+                      ৳{price.toLocaleString("en-BD")}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : null}
+
+            {/* Navigation */}
+            <div className="mt-10 flex items-center justify-between border-t border-[#EEE8DE] pt-6">
+              <button
+                type="button"
+                onClick={previous}
+                disabled={step === 0}
+                className="rounded-full border border-[#DDD4C7] bg-white px-5 py-3 text-xs font-semibold text-[#625C55] transition hover:border-[#C8A96B] disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                Back
+              </button>
+
+              {step < STEPS.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={next}
+                  className="rounded-full bg-[#1F1F1F] px-6 py-3 text-xs font-semibold text-white transition hover:bg-[#34312D]"
+                >
+                  Continue
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={adding || saving}
+                  className="rounded-full bg-[#1F1F1F] px-7 py-3 text-xs font-semibold text-white transition hover:bg-[#34312D] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {adding
+                    ? "Adding..."
+                    : "Add custom thobe to cart"}
+                </button>
+              )}
+            </div>
+          </section>
+
+          {/* Preview */}
+          <aside className="lg:sticky lg:top-6 lg:self-start">
+            <div className="overflow-hidden rounded-[28px] border border-[#E7E0D6] bg-white shadow-[0_12px_45px_rgba(31,31,31,0.05)]">
+
+              <div className="border-b border-[#EEE8DE] px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#A7834A]">
+                      Live preview
+                    </div>
+
+                    <div className="mt-1 text-lg font-semibold">
+                      Your custom thobe
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-[10px] text-[#8A847C]">
+                      Starting from
+                    </div>
+                    <div className="text-lg font-semibold">
+                      ৳{price.toLocaleString("en-BD")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="min-h-[560px] bg-[#F5F1E9] p-4">
+                <div className="flex min-h-[520px] items-center justify-center overflow-hidden rounded-[22px] bg-[#FAF9F6]">
+                  <ThobePreview
+                    ref={previewRef}
+                    config={config}
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-[#EEE8DE] p-5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#9A938A]">
+                      Fabric
+                    </div>
+                    <div className="mt-1 truncate text-xs font-medium">
+                      {fabric?.label ||
+                        config.fabric}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#9A938A]">
+                      Colour
+                    </div>
+                    <div className="mt-1 truncate text-xs font-medium">
+                      {fabricColor?.label ||
+                        config.fabricColor}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#9A938A]">
+                      Style
+                    </div>
+                    <div className="mt-1 truncate text-xs font-medium">
+                      {collar?.label ||
+                        config.collarType}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#9A938A]">
+                      Size
+                    </div>
+                    <div className="mt-1 text-xs font-medium">
+                      {config.size || "Not selected"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+
+export default function CustomThobePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#FAF9F6] px-4 py-12">
+          <div className="mx-auto flex min-h-[60vh] w-full max-w-[1440px] items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#E7E0D6] border-t-[#C8A96B]" />
+              <p className="mt-4 text-sm text-[#77716A]">
+                Loading custom thobe studio...
+              </p>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <CustomThobePageContent />
+    </Suspense>
   );
 }

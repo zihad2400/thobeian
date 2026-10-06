@@ -60,9 +60,75 @@ export const useCartStore = create((set, get) => ({
       color,
       fabric,
       quantity = 1,
+      isCustom = false,
+      customDesignId = "",
     } = {}
   ) => {
     const previousItems = get().items;
+
+    /*
+     * ============================================================
+     * CUSTOM THOBE
+     * ============================================================
+     */
+    if (isCustom) {
+      if (!customDesignId) {
+        toast.error("Custom design is missing");
+        return false;
+      }
+
+      if (quantity !== 1) {
+        toast.error("Custom thobe can only be added one at a time");
+        return false;
+      }
+
+      set({
+        loading: true,
+        initialized: true,
+      });
+
+      try {
+        const { data } = await axios.post("/api/cart", {
+          isCustom: true,
+          customDesignId,
+          quantity: 1,
+        });
+
+        set({
+          items: data.data.items || [],
+          initialized: true,
+          loading: false,
+        });
+
+        toast.success("Custom thobe added to cart");
+
+        return true;
+      } catch (error) {
+        console.error(
+          "Add custom thobe to cart error:",
+          error
+        );
+
+        set({
+          items: previousItems,
+          loading: false,
+        });
+
+        toast.error(
+          error.response?.data?.message ||
+            "Failed to add custom thobe"
+        );
+
+        return false;
+      }
+    }
+
+    /*
+     * ============================================================
+     * NORMAL PRODUCT
+     * Existing production logic remains unchanged.
+     * ============================================================
+     */
 
     const defaultSize = size || "M";
     const defaultColor = color || "";

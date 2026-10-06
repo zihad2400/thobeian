@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { successResponse, errorResponse } from "@/lib/apiResponse";
 import { cookies } from "next/headers";
 import crypto from "crypto";
+import CustomThobeDesign from "@/models/CustomThobeDesign";
+import { calculatePrice } from "@/config/customThobe";
 
 async function getSessionId() {
   const cookieStore = await cookies();
@@ -74,14 +76,147 @@ export async function POST(req) {
       color,
       fabric,
       quantity = 1,
-    } = body;
 
-    if (!productId) {
-      return errorResponse("Product is required", 400);
-    }
+      // Custom Thobe
+      isCustom = false,
+      customDesignId,
+    } = body;
 
     if (!Number.isInteger(quantity) || quantity < 1) {
       return errorResponse("Invalid quantity", 400);
+    }
+
+    /*
+     * ============================================================
+     * CUSTOM THOBE CART ITEM
+     * ============================================================
+     */
+    if (isCustom) {
+      if (!customDesignId) {
+        return errorResponse(
+          "Custom design ID is required",
+          400
+        );
+      }
+
+      if (quantity !== 1) {
+        return errorResponse(
+          "Custom thobes can only be added one at a time",
+          400
+        );
+      }
+
+      const sessionId = await getSessionId();
+
+      const design = await CustomThobeDesign.findOne({
+        designId: customDesignId,
+        ...(user
+          ? { user: user._id }
+          : { sessionId }),
+      }).lean();
+
+      if (!design) {
+        return errorResponse(
+          "Custom design not found or access denied",
+          404
+        );
+      }
+
+      const trustedPrice = calculatePrice(design.config);
+
+      const customName =
+        design.name?.trim() || "Custom Thobe";
+
+      const customImage =
+        design.previewImage || "";
+
+      const customFabric =
+        design.config?.fabric || "";
+
+      const customColor =
+        design.config?.fabricColor || "";
+
+      const customSize =
+        design.config?.size ||
+        design.config?.measurements?.size ||
+        "";
+
+      let cart = await findCart(user);
+
+      if (!cart) {
+        if (user) {
+          cart = await Cart.create({
+            user: user._id,
+            items: [],
+          });
+        } else {
+          const newSessionId = await getOrCreateSessionId();
+
+          cart = await Cart.create({
+            sessionId: newSessionId,
+            items: [],
+          });
+        }
+      }
+
+      /*
+       * A custom design is unique.
+       * Adding the exact same design again increases quantity.
+       */
+      const existingIdx = cart.items.findIndex(
+        (item) =>
+          item.isCustom === true &&
+          item.customDesignId === customDesignId
+      );
+
+      if (existingIdx >= 0) {
+        cart.items[existingIdx].quantity += 1;
+        cart.items[existingIdx].price = trustedPrice;
+        cart.items[existingIdx].name = customName;
+        cart.items[existingIdx].image = customImage;
+        cart.items[existingIdx].fabric = customFabric;
+        cart.items[existingIdx].color = customColor;
+        cart.items[existingIdx].size = customSize;
+        cart.items[existingIdx].customConfig =
+          design.config;
+      } else {
+        cart.items.push({
+          product: undefined,
+          variantId: "",
+          name: customName,
+          image: customImage,
+          size: customSize,
+          color: customColor,
+          fabric: customFabric,
+          price: trustedPrice,
+          quantity: 1,
+          isCustom: true,
+          customDesignId,
+          customConfig: design.config,
+        });
+      }
+
+      cart.updatedAt = new Date();
+
+      await cart.save();
+
+      return successResponse(
+        {
+          items: cart.items,
+        },
+        "Custom thobe added to cart"
+      );
+    }
+
+    /*
+     * ============================================================
+     * NORMAL PRODUCT CART ITEM
+     * Existing production logic remains unchanged.
+     * ============================================================
+     */
+
+    if (!productId) {
+      return errorResponse("Product is required", 400);
     }
 
     const product = await Product.findOne({
@@ -90,18 +225,25 @@ export async function POST(req) {
     }).lean();
 
     if (!product) {
-      return errorResponse("Product not found or unavailable", 404);
+      return errorResponse(
+        "Product not found or unavailable",
+        404
+      );
     }
 
     let variant = null;
 
     if (variantId) {
       variant = product.variants?.find(
-        (item) => item._id?.toString() === variantId.toString()
+        (item) =>
+          item._id?.toString() === variantId.toString()
       );
 
       if (!variant) {
-        return errorResponse("Selected variant not found", 400);
+        return errorResponse(
+          "Selected variant not found",
+          400
+        );
       }
     } else if (product.variants?.length) {
       variant = product.variants.find(
@@ -119,9 +261,14 @@ export async function POST(req) {
       }
     }
 
-    const resolvedSize = variant?.size || size || "";
-    const resolvedColor = variant?.color || color || "";
-    const resolvedFabric = variant?.fabric || fabric || "";
+    const resolvedSize =
+      variant?.size || size || "";
+
+    const resolvedColor =
+      variant?.color || color || "";
+
+    const resolvedFabric =
+      variant?.fabric || fabric || "";
 
     const resolvedPrice =
       typeof variant?.price === "number"
@@ -134,18 +281,16 @@ export async function POST(req) {
       product.hoverImage ||
       "";
 
-    const resolvedSku =
-      variant?.sku ||
-      product.sku ||
-      "";
-
     const availableStock =
       typeof variant?.stock === "number"
         ? variant.stock
         : product.totalStock;
 
     if (availableStock < 1) {
-      return errorResponse("This product is out of stock", 400);
+      return errorResponse(
+        "This product is out of stock",
+        400
+      );
     }
 
     let cart = await findCart(user);
@@ -168,17 +313,24 @@ export async function POST(req) {
 
     const existingIdx = cart.items.findIndex(
       (item) =>
-        item.product.toString() === productId.toString() &&
-        (item.variantId || "") === (variant?._id?.toString() || "") &&
+        !item.isCustom &&
+        item.product?.toString() === productId.toString() &&
+        (item.variantId || "") ===
+          (variant?._id?.toString() || "") &&
         item.size === resolvedSize &&
         item.color === resolvedColor &&
         item.fabric === resolvedFabric
     );
 
     const existingQuantity =
-      existingIdx >= 0 ? cart.items[existingIdx].quantity : 0;
+      existingIdx >= 0
+        ? cart.items[existingIdx].quantity
+        : 0;
 
-    if (existingQuantity + quantity > availableStock) {
+    if (
+      existingQuantity + quantity >
+      availableStock
+    ) {
       return errorResponse(
         `Only ${availableStock} item${
           availableStock === 1 ? "" : "s"
@@ -190,19 +342,31 @@ export async function POST(req) {
     if (existingIdx >= 0) {
       cart.items[existingIdx].quantity += quantity;
 
-      // Refresh trusted product information.
-      cart.items[existingIdx].name = product.name;
-      cart.items[existingIdx].price = resolvedPrice;
-      cart.items[existingIdx].image = resolvedImage;
+      cart.items[existingIdx].name =
+        product.name;
+
+      cart.items[existingIdx].price =
+        resolvedPrice;
+
+      cart.items[existingIdx].image =
+        resolvedImage;
+
       cart.items[existingIdx].variantId =
         variant?._id?.toString() || "";
-      cart.items[existingIdx].size = resolvedSize;
-      cart.items[existingIdx].color = resolvedColor;
-      cart.items[existingIdx].fabric = resolvedFabric;
+
+      cart.items[existingIdx].size =
+        resolvedSize;
+
+      cart.items[existingIdx].color =
+        resolvedColor;
+
+      cart.items[existingIdx].fabric =
+        resolvedFabric;
     } else {
       cart.items.push({
         product: product._id,
-        variantId: variant?._id?.toString() || "",
+        variantId:
+          variant?._id?.toString() || "",
         name: product.name,
         image: resolvedImage,
         size: resolvedSize,
@@ -210,6 +374,7 @@ export async function POST(req) {
         fabric: resolvedFabric,
         price: resolvedPrice,
         quantity,
+        isCustom: false,
       });
     }
 
@@ -225,10 +390,13 @@ export async function POST(req) {
     );
   } catch (error) {
     console.error("Cart POST error:", error);
-    return errorResponse(error.message, 500);
+
+    return errorResponse(
+      error.message || "Failed to add to cart",
+      500
+    );
   }
 }
-
 export async function DELETE() {
   try {
     await connectDB();

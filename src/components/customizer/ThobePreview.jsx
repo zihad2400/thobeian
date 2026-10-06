@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  forwardRef,
+  } from "react";
+
+import {
   FABRICS,
   FABRIC_COLORS,
   COLLAR_TYPES,
@@ -18,7 +22,10 @@ import {
   MONOGRAM_COLORS,
 } from "@/config/customThobe";
 
-export default function ThobePreview({ config }) {
+const ThobePreview = forwardRef(function ThobePreview(
+  { config },
+  ref
+) {
   const fabric = FABRICS.find((f) => f.id === config.fabric) || FABRICS[0];
   const colorObj =
     FABRIC_COLORS.find((c) => c.id === config.fabricColor) || FABRIC_COLORS[0];
@@ -90,6 +97,7 @@ export default function ThobePreview({ config }) {
   return (
     <div className="w-full h-full flex items-center justify-center">
       <svg
+        ref={ref}
         viewBox="0 0 300 550"
         className="w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
@@ -497,4 +505,6 @@ export default function ThobePreview({ config }) {
       </svg>
     </div>
   );
-}
+});
+
+export default ThobePreview;

@@ -101,11 +101,14 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("========== CLOUDINARY UPLOAD ERROR ==========");
-    console.error("name:", error?.name);
-    console.error("message:", error?.message);
-    console.error("http_code:", error?.http_code);
-    console.error("error:", error);
+    console.error(
+      "CLOUDINARY_UPLOAD_ERROR",
+      JSON.stringify({
+        name: error?.name || null,
+        message: error?.message || null,
+        http_code: error?.http_code || null,
+      })
+    );
 
     return NextResponse.json(
       {
