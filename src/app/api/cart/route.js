@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from "@/lib/apiResponse";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import CustomThobeDesign from "@/models/CustomThobeDesign";
-import { calculatePrice } from "@/config/customThobe";
+import { calculatePrice, generateDesignId } from "@/config/customThobe";
 
 async function getSessionId() {
   const cookieStore = await cookies();
@@ -80,6 +80,9 @@ export async function POST(req) {
       // Custom Thobe
       isCustom = false,
       customDesignId,
+      customConfig,
+      customName,
+      customPreviewImage,
     } = body;
 
     if (!Number.isInteger(quantity) || quantity < 1) {
@@ -92,13 +95,6 @@ export async function POST(req) {
      * ============================================================
      */
     if (isCustom) {
-      if (!customDesignId) {
-        return errorResponse(
-          "Custom design ID is required",
-          400
-        );
-      }
-
       if (quantity !== 1) {
         return errorResponse(
           "Custom thobes can only be added one at a time",
@@ -108,12 +104,103 @@ export async function POST(req) {
 
       const sessionId = await getSessionId();
 
-      const design = await CustomThobeDesign.findOne({
-        designId: customDesignId,
-        ...(user
-          ? { user: user._id }
-          : { sessionId }),
-      }).lean();
+      /*
+       * FAST CUSTOM THOBE FLOW
+       *
+       * If config is supplied, create/update the design and
+       * add it to the cart in THIS SAME request.
+       *
+       * This removes the previous:
+       * /api/custom-thobe -> /api/cart
+       * sequential production round-trip.
+       */
+
+      let design = null;
+
+      if (customConfig) {
+        if (
+          typeof customConfig !== "object" ||
+          Array.isArray(customConfig)
+        ) {
+          return errorResponse(
+            "Invalid custom configuration",
+            400
+          );
+        }
+
+        if (
+          customPreviewImage &&
+          typeof customPreviewImage !== "string"
+        ) {
+          return errorResponse(
+            "Invalid preview image",
+            400
+          );
+        }
+
+        if (
+          customPreviewImage &&
+          customPreviewImage.length > 500000
+        ) {
+          return errorResponse(
+            "Preview image is too large",
+            400
+          );
+        }
+
+        const trustedPrice = calculatePrice(customConfig);
+
+        if (customDesignId) {
+          design = await CustomThobeDesign.findOne({
+            designId: customDesignId,
+            ...(user
+              ? { user: user._id }
+              : { sessionId }),
+          });
+        }
+
+        if (design) {
+          design.config = customConfig;
+          design.totalPrice = trustedPrice;
+
+          if (typeof customPreviewImage === "string") {
+            design.previewImage = customPreviewImage;
+          }
+
+          if (
+            typeof customName === "string" &&
+            customName.trim()
+          ) {
+            design.name = customName.trim();
+          }
+
+          await design.save();
+        } else {
+          const newDesignId = customDesignId || generateDesignId();
+
+          design = await CustomThobeDesign.create({
+            designId: newDesignId,
+            user: user?._id || null,
+            sessionId,
+            config: customConfig,
+            totalPrice: trustedPrice,
+            previewImage:
+              customPreviewImage || null,
+            name:
+              typeof customName === "string" &&
+              customName.trim()
+                ? customName.trim()
+                : "Custom Thobe",
+          });
+        }
+      } else if (customDesignId) {
+        design = await CustomThobeDesign.findOne({
+          designId: customDesignId,
+          ...(user
+            ? { user: user._id }
+            : { sessionId }),
+        });
+      }
 
       if (!design) {
         return errorResponse(
@@ -122,9 +209,11 @@ export async function POST(req) {
         );
       }
 
-      const trustedPrice = calculatePrice(design.config);
+      const trustedPrice = calculatePrice(
+        design.config
+      );
 
-      const customName =
+      const resolvedCustomName =
         design.name?.trim() || "Custom Thobe";
 
       const customImage =
@@ -172,7 +261,7 @@ export async function POST(req) {
       if (existingIdx >= 0) {
         cart.items[existingIdx].quantity += 1;
         cart.items[existingIdx].price = trustedPrice;
-        cart.items[existingIdx].name = customName;
+        cart.items[existingIdx].name = resolvedCustomName;
         cart.items[existingIdx].image = customImage;
         cart.items[existingIdx].fabric = customFabric;
         cart.items[existingIdx].color = customColor;
@@ -183,7 +272,7 @@ export async function POST(req) {
         cart.items.push({
           product: undefined,
           variantId: "",
-          name: customName,
+          name: resolvedCustomName,
           image: customImage,
           size: customSize,
           color: customColor,
@@ -203,6 +292,7 @@ export async function POST(req) {
       return successResponse(
         {
           items: cart.items,
+          customDesignId: design.designId,
         },
         "Custom thobe added to cart"
       );

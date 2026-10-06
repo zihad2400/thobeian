@@ -62,6 +62,9 @@ export const useCartStore = create((set, get) => ({
       quantity = 1,
       isCustom = false,
       customDesignId = "",
+      customConfig = null,
+      customName = "Custom Thobe",
+      customPreviewImage = "",
     } = {}
   ) => {
     const previousItems = get().items;
@@ -91,6 +94,9 @@ export const useCartStore = create((set, get) => ({
         const { data } = await axios.post("/api/cart", {
           isCustom: true,
           customDesignId,
+          customConfig,
+          customName,
+          customPreviewImage,
           quantity: 1,
         });
 

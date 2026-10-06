@@ -388,28 +388,41 @@ function CustomThobePageContent() {
     try {
       setAdding(true);
 
-      const design = await saveDesign();
+      /*
+       * ONE-REQUEST CUSTOM THOBE FLOW
+       *
+       * The cart API now creates/updates the design and
+       * adds it to the cart in the same server request.
+       *
+       * This removes the previous sequential:
+       * saveDesign() -> addToCart()
+       * production latency.
+       */
 
-      if (!design?.designId) {
-        throw new Error(
-          "Custom design could not be created"
-        );
-      }
+      const previewImage = createPreviewImage();
 
-      await addToCart(
+      const added = await addToCart(
         null,
         {
           isCustom: true,
-          customDesignId: design.designId,
+          customDesignId: designId || "",
+          customConfig: config,
+          customName: "Custom Thobe",
+          customPreviewImage: previewImage,
           quantity: 1,
         }
       );
+
+      if (!added) {
+        throw new Error(
+          "Custom thobe could not be added to cart"
+        );
+      }
 
       toast.success(
         "Your custom thobe has been added to cart."
       );
 
-      // Move to Step 5 / Preview after successful cart addition.
       setStep(4);
     } catch (error) {
       console.error(error);
