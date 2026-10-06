@@ -209,6 +209,13 @@ export async function POST(req) {
         );
       }
 
+      /*
+       * IMPORTANT:
+       * Always use the trusted design ID generated/resolved
+       * by the server, never the raw request value.
+       */
+      const resolvedCustomDesignId = design.designId;
+
       const trustedPrice = calculatePrice(
         design.config
       );
@@ -255,7 +262,7 @@ export async function POST(req) {
       const existingIdx = cart.items.findIndex(
         (item) =>
           item.isCustom === true &&
-          item.customDesignId === customDesignId
+          item.customDesignId === resolvedCustomDesignId
       );
 
       if (existingIdx >= 0) {
@@ -280,7 +287,7 @@ export async function POST(req) {
           price: trustedPrice,
           quantity: 1,
           isCustom: true,
-          customDesignId,
+          customDesignId: resolvedCustomDesignId,
           customConfig: design.config,
         });
       }

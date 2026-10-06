@@ -75,11 +75,6 @@ export const useCartStore = create((set, get) => ({
      * ============================================================
      */
     if (isCustom) {
-      if (!customDesignId) {
-        toast.error("Custom design is missing");
-        return false;
-      }
-
       if (quantity !== 1) {
         toast.error("Custom thobe can only be added one at a time");
         return false;
@@ -105,8 +100,6 @@ export const useCartStore = create((set, get) => ({
           initialized: true,
           loading: false,
         });
-
-        toast.success("Custom thobe added to cart");
 
         return true;
       } catch (error) {
